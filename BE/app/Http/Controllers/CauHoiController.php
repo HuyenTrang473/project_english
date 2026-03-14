@@ -1,0 +1,239 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\CauHoi;
+use App\Models\BaiTest;
+use App\Http\Requests\StoreCauHoiRequest;
+use Illuminate\Http\Request;
+
+class CauHoiController extends Controller
+{
+    /**
+     * Lấy danh sách câu hỏi theo bài test (giáo viên)
+     */
+    public function indexByTest($testId)
+    {
+        try {
+            $test = BaiTest::find($testId);
+
+            if (!$test) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bài test không tồn tại',
+                ], 404);
+            }
+
+            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền xem câu hỏi của bài test này',
+                ], 403);
+            }
+
+            $questions = CauHoi::where('id_bai_test', $testId)
+                ->with('dapAns')
+                ->orderBy('thu_tu')
+                ->get()
+                ->map(function ($q) {
+                    return [
+                        'id' => $q->id,
+                        'noi_dung' => $q->noi_dung,
+                        'mo_ta_chi_tiet' => $q->mo_ta_chi_tiet,
+                        'loai_cau_hoi' => $q->loai_cau_hoi,
+                        'hinh_anh_url' => $q->hinh_anh_url,
+                        'ghi_chu' => $q->ghi_chu,
+                        'thu_tu' => $q->thu_tu,
+                        'diem_max' => $q->diem_max,
+                        'dap_ans' => $q->dapAns->map(function ($a) {
+                            return [
+                                'id' => $a->id,
+                                'noi_dung' => $a->noi_dung,
+                                'hinh_anh_url' => $a->hinh_anh_url,
+                                'mo_ta_chi_tiet' => $a->mo_ta_chi_tiet,
+                                'la_dap_an_dung' => $a->la_dap_an_dung,
+                                'diem_tu_dong' => $a->diem_tu_dong,
+                                'thu_tu' => $a->thu_tu,
+                            ];
+                        }),
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $questions,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi lấy danh sách câu hỏi: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Tạo câu hỏi mới (giáo viên)
+     */
+    public function store(StoreCauHoiRequest $request, $testId)
+    {
+        try {
+            $test = BaiTest::find($testId);
+
+            if (!$test) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bài test không tồn tại',
+                ], 404);
+            }
+
+            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền thêm câu hỏi vào bài test này',
+                ], 403);
+            }
+
+            // Lấy thứ tự mới
+            $maxOrder = CauHoi::where('id_bai_test', $testId)->max('thu_tu') ?? 0;
+
+            $question = CauHoi::create([
+                'id_bai_test' => $testId,
+                'noi_dung' => $request->noi_dung ?? $request->content,
+                'mo_ta_chi_tiet' => $request->mo_ta_chi_tiet,
+                'loai_cau_hoi' => $request->loai_cau_hoi ?? $request->type ?? 'multiple_choice',
+                'hinh_anh_url' => $request->hinh_anh_url,
+                'ghi_chu' => $request->ghi_chu,
+                'thu_tu' => $maxOrder + 1,
+                'diem_max' => $request->diem_max ?? $request->maxScore ?? 1,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tạo câu hỏi thành công',
+                'data' => [
+                    'id' => $question->id,
+                    'noi_dung' => $question->noi_dung,
+                    'mo_ta_chi_tiet' => $question->mo_ta_chi_tiet,
+                    'loai_cau_hoi' => $question->loai_cau_hoi,
+                    'hinh_anh_url' => $question->hinh_anh_url,
+                    'ghi_chu' => $question->ghi_chu,
+                    'thu_tu' => $question->thu_tu,
+                    'diem_max' => $question->diem_max,
+                    'dap_ans' => [],
+                ],
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi tạo câu hỏi: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Cập nhật câu hỏi (giáo viên)
+     */
+    public function update(StoreCauHoiRequest $request, $testId, $questionId)
+    {
+        try {
+            $test = BaiTest::find($testId);
+
+            if (!$test) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bài test không tồn tại',
+                ], 404);
+            }
+
+            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền sửa câu hỏi của bài test này',
+                ], 403);
+            }
+
+            $question = CauHoi::where('id_bai_test', $testId)->find($questionId);
+
+            if (!$question) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Câu hỏi không tồn tại',
+                ], 404);
+            }
+
+            $question->update([
+                'noi_dung' => $request->noi_dung ?? $request->content ?? $question->noi_dung,
+                'mo_ta_chi_tiet' => $request->mo_ta_chi_tiet ?? $question->mo_ta_chi_tiet,
+                'loai_cau_hoi' => $request->loai_cau_hoi ?? $request->type ?? $question->loai_cau_hoi,
+                'hinh_anh_url' => $request->hinh_anh_url ?? $question->hinh_anh_url,
+                'ghi_chu' => $request->ghi_chu ?? $question->ghi_chu,
+                'diem_max' => $request->diem_max ?? $request->maxScore ?? $question->diem_max,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật câu hỏi thành công',
+                'data' => [
+                    'id' => $question->id,
+                    'noi_dung' => $question->noi_dung,
+                    'mo_ta_chi_tiet' => $question->mo_ta_chi_tiet,
+                    'loai_cau_hoi' => $question->loai_cau_hoi,
+                    'hinh_anh_url' => $question->hinh_anh_url,
+                    'ghi_chu' => $question->ghi_chu,
+                    'thu_tu' => $question->thu_tu,
+                    'diem_max' => $question->diem_max,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi cập nhật câu hỏi: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Xóa câu hỏi (giáo viên)
+     */
+    public function destroy($testId, $questionId)
+    {
+        try {
+            $test = BaiTest::find($testId);
+
+            if (!$test) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bài test không tồn tại',
+                ], 404);
+            }
+
+            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền xóa câu hỏi của bài test này',
+                ], 403);
+            }
+
+            $question = CauHoi::where('id_bai_test', $testId)->find($questionId);
+
+            if (!$question) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Câu hỏi không tồn tại',
+                ], 404);
+            }
+
+            $question->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Xóa câu hỏi thành công',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi xóa câu hỏi: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+}

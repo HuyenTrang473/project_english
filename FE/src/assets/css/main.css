@@ -1,0 +1,37 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
+:root {
+  --primary-color: #fc74dd;
+  --bs-primary: #fc74dd;
+  --secondary-color: #6c757d;
+  --font-family-base: 'Outfit', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+body {
+  font-family: var(--font-family-base);
+  background-color: #f8f9fa;
+  color: #212529;
+}
+
+a {
+  text-decoration: none;
+  color: var(--bs-primary);
+}
+
+.text-primary {
+  color: var(--bs-primary) !important;
+}
+
+.btn-primary {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #e05ec3;
+  border-color: #e05ec3;
+}
+
+/* Custom Overrides if needed */

@@ -1,0 +1,411 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\StoreBaiTestRequest;
+use App\Http\Requests\SubmitTestRequest;
+use App\Models\BaiTest;
+use App\Models\CauHoi;
+use App\Models\CourseEnrollment;
+use App\Models\StudentTestResult;
+use App\Models\StudentAnswerDetail;
+use App\Http\Resources\BaiTestResource;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class BaiTestController extends Controller
+{
+    /**
+     * Danh sách bài test của một bài học (public)
+     */
+    public function indexByLesson($lessonId)
+    {
+        try {
+            $baiTests = BaiTest::where('id_lesson', $lessonId)
+                ->published()
+                ->with('giaoVien:id,name')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => BaiTestResource::collection($baiTests),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi lấy danh sách bài test: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Lấy chi tiết bài test (public)
+     */
+    public function show($id)
+    {
+        try {
+            $test = BaiTest::published()
+                ->with('giaoVien:id,name', 'cauHois.dapAns')
+                ->find($id);
+
+            if (!$test) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bài test không tồn tại',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => new BaiTestResource($test),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi lấy chi tiết bài test: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Tạo bài test mới (giáo viên)
+     */
+    public function store(StoreBaiTestRequest $request)
+    {
+        try {
+            $test = BaiTest::create([
+                'id_giao_vien' => auth('sanctum')->id(),
+                'id_lesson' => $request->id_lesson,
+                'ten_bai_test' => $request->ten_bai_test,
+                'mo_ta' => $request->mo_ta,
+                'thoi_gian_toi_da' => $request->thoi_gian_toi_da,
+                'diem_tong_max' => $request->diem_tong_max,
+                'trang_thai' => $request->trang_thai,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tạo bài test thành công',
+                'data' => new BaiTestResource($test),
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi tạo bài test: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Cập nhật bài test (giáo viên)
+     */
+    public function update(StoreBaiTestRequest $request, $id)
+    {
+        try {
+            $test = BaiTest::find($id);
+
+            if (!$test) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bài test không tồn tại',
+                ], 404);
+            }
+
+            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền cập nhật bài test này',
+                ], 403);
+            }
+
+            $test->update([
+                'id_lesson' => $request->id_lesson,
+                'ten_bai_test' => $request->ten_bai_test,
+                'mo_ta' => $request->mo_ta,
+                'thoi_gian_toi_da' => $request->thoi_gian_toi_da,
+                'diem_tong_max' => $request->diem_tong_max,
+                'trang_thai' => $request->trang_thai,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật bài test thành công',
+                'data' => new BaiTestResource($test),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi cập nhật bài test: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Xóa bài test (giáo viên)
+     */
+    public function destroy($id)
+    {
+        try {
+            $test = BaiTest::find($id);
+
+            if (!$test) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bài test không tồn tại',
+                ], 404);
+            }
+
+            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền xóa bài test này',
+                ], 403);
+            }
+
+            $test->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Xóa bài test thành công',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi xóa bài test: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Bắt đầu làm bài test (học sinh)
+     */
+    public function startTest($testId)
+    {
+        $userId = auth('sanctum')->id();
+
+        // Kiểm tra bài test tồn tại và đã published
+        $test = BaiTest::published()->find($testId);
+        if (!$test) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bài test không tồn tại hoặc chưa được công bố',
+            ], 404);
+        }
+
+        // Kiểm tra học sinh đã enroll khóa học chứa bài test
+        $enrolled = CourseEnrollment::where('id_hoc_sinh', $userId)
+            ->where('id_lesson', $test->id_lesson)
+            ->exists();
+
+        if (!$enrolled) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn chưa đăng ký khóa học chứa bài test này',
+            ], 403);
+        }
+
+        // firstOrCreate đảm bảo atomicity nhờ UNIQUE(id_hoc_sinh, id_bai_test)
+        $result = StudentTestResult::firstOrCreate(
+            [
+                'id_hoc_sinh' => $userId,
+                'id_bai_test' => $testId,
+            ],
+            [
+                'trang_thai' => 1,
+                'thoi_gian_bat_dau' => now(),
+            ]
+        );
+
+        if ($result->isGraded()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bài test này đã được chấm, không thể làm lại',
+            ], 403);
+        }
+
+        if ($result->isSubmitted()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bài test này đã được nộp',
+            ], 403);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bắt đầu làm bài test',
+            'data' => [
+                'id' => $result->id,
+                'id_bai_test' => $result->id_bai_test,
+                'trang_thai' => $result->trang_thai,
+            ],
+        ], 200);
+    }
+
+    /**
+     * Nộp bài test (học sinh)
+     */
+    public function submitTest(SubmitTestRequest $request, $testId)
+    {
+        $userId = auth('sanctum')->id();
+
+        // Kiểm tra bài test tồn tại và đã published
+        $test = BaiTest::published()->find($testId);
+        if (!$test) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bài test không tồn tại hoặc chưa được công bố',
+            ], 404);
+        }
+
+        // Kiểm tra học sinh đã enroll khóa học chứa bài test
+        $enrolled = CourseEnrollment::where('id_hoc_sinh', $userId)
+            ->where('id_lesson', $test->id_lesson)
+            ->exists();
+
+        if (!$enrolled) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn chưa đăng ký khóa học chứa bài test này',
+            ], 403);
+        }
+
+        $result = StudentTestResult::where('id_hoc_sinh', $userId)
+            ->where('id_bai_test', $testId)
+            ->first();
+
+        if (!$result) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn chưa bắt đầu bài test này',
+            ], 404);
+        }
+
+        if ($result->isSubmitted() || $result->isGraded()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bài test này đã được nộp trước đó',
+            ], 403);
+        }
+
+        // Lấy danh sách câu hỏi hợp lệ của bài test
+        $validQuestionIds = CauHoi::where('id_bai_test', $testId)
+            ->pluck('id')
+            ->toArray();
+
+        // Dùng transaction để đảm bảo toàn vẹn dữ liệu
+        DB::transaction(function () use ($request, $result, $validQuestionIds) {
+            foreach ($request->answers as $answer) {
+                // Chỉ lưu câu hỏi thuộc bài test này
+                if (!in_array($answer['id_cau_hoi'], $validQuestionIds)) {
+                    continue;
+                }
+
+                // updateOrCreate tránh trùng nếu submit lại
+                StudentAnswerDetail::updateOrCreate(
+                    [
+                        'id_student_test_result' => $result->id,
+                        'id_cau_hoi' => $answer['id_cau_hoi'],
+                    ],
+                    [
+                        'id_dap_an' => $answer['id_dap_an'] ?? null,
+                        'cau_tra_loi_tu_do' => $answer['cau_tra_loi_tu_do'] ?? null,
+                    ]
+                );
+            }
+
+            // Tính tổng điểm 1 lần duy nhất sau khi lưu hết câu trả lời
+            $totalScore = $result->studentAnswerDetails()
+                ->whereNotNull('diem_cau_hoi')
+                ->sum('diem_cau_hoi');
+
+            $result->update([
+                'diem_tong' => round((float) $totalScore, 2),
+                'trang_thai' => 2,
+                'thoi_gian_ket_thuc' => now(),
+            ]);
+        });
+
+        $result->refresh();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Nộp bài test thành công',
+            'data' => [
+                'id' => $result->id,
+                'diem_tong' => $result->diem_tong,
+                'trang_thai' => $result->trang_thai,
+            ],
+        ], 200);
+    }
+
+    /**
+     * Xem kết quả test (học sinh)
+     */
+    public function getResult($testId)
+    {
+        try {
+            $result = StudentTestResult::where('id_hoc_sinh', auth('sanctum')->id())
+                ->where('id_bai_test', $testId)
+                ->with('studentAnswerDetails.cauHoi', 'studentAnswerDetails.dapAn')
+                ->first();
+
+            if (!$result) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kết quả test không tồn tại',
+                ], 404);
+            }
+
+            $answers = $result->studentAnswerDetails()
+                ->with('cauHoi', 'dapAn')
+                ->get()
+                ->map(function ($answer) {
+                    return [
+                        'id_cau_hoi' => $answer->id_cau_hoi,
+                        'noi_dung_cau_hoi' => $answer->cauHoi->noi_dung,
+                        'dap_an_chon' => $answer->dapAn ? $answer->dapAn->noi_dung : $answer->cau_tra_loi_tu_do,
+                        'diem_cau_hoi' => $answer->diem_cau_hoi,
+                        'la_dung' => $answer->la_dung,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $result->id,
+                    'diem_tong' => $result->diem_tong,
+                    'trang_thai' => $result->trang_thai,
+                    'thoi_gian_ket_thuc' => $result->thoi_gian_ket_thuc,
+                    'chi_tiet_tung_cau' => $answers,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi lấy kết quả test: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Danh sách bài test của giáo viên (giáo viên)
+     */
+    public function myTests(Request $request)
+    {
+        try {
+            $tests = BaiTest::where('id_giao_vien', auth('sanctum')->id())
+                ->with('lesson:id,tieu_de')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => BaiTestResource::collection($tests),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi lấy danh sách bài test: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+}
