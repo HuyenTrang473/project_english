@@ -27,6 +27,14 @@
                         </router-link>
                     </li>
 
+                    <!-- LESSONS -->
+                    <li class="nav-item">
+                        <router-link to="/lessons" class="nav-link d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-book fs-5 text-info"></i>
+                            <span class="fw-semibold">Bài Học</span>
+                        </router-link>
+                    </li>
+
                     <!-- DROPDOWN TEST -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="testDropdown"

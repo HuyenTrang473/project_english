@@ -16,7 +16,6 @@ function normalizeToken(rawToken) {
 const http = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api",
   headers: {
-    "Content-Type": "application/json",
     Accept: "application/json",
   },
 });
@@ -30,6 +29,16 @@ http.interceptors.request.use(
     } else if (config.headers && config.headers.Authorization) {
       delete config.headers.Authorization;
     }
+
+    // Handle FormData — don't set Content-Type header, let browser/axios auto-set with boundary
+    if (config.data instanceof FormData) {
+      // Don't set Content-Type for FormData, axios will handle it automatically with proper boundary
+      delete config.headers["Content-Type"];
+    } else {
+      // For non-FormData requests, explicitly set Content-Type to JSON
+      config.headers["Content-Type"] = "application/json";
+    }
+
     return config;
   },
   function (error) {

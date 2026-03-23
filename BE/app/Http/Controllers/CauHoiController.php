@@ -6,6 +6,8 @@ use App\Models\CauHoi;
 use App\Models\BaiTest;
 use App\Http\Requests\StoreCauHoiRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class CauHoiController extends Controller
 {
@@ -24,7 +26,11 @@ class CauHoiController extends Controller
                 ], 404);
             }
 
-            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+            $currentUserId = auth('sanctum')->id();
+            $currentUser = auth('sanctum')->user();
+            $isAdmin = $currentUser && $currentUser->role === 'admin';
+
+            if ((int)$test->id_giao_vien !== (int)$currentUserId && !$isAdmin) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền xem câu hỏi của bài test này',
@@ -86,7 +92,11 @@ class CauHoiController extends Controller
                 ], 404);
             }
 
-            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+            $currentUserId = auth('sanctum')->id();
+            $currentUser = auth('sanctum')->user();
+            $isAdmin = $currentUser && $currentUser->role === 'admin';
+
+            if ((int)$test->id_giao_vien !== (int)$currentUserId && !$isAdmin) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền thêm câu hỏi vào bài test này',
@@ -107,6 +117,11 @@ class CauHoiController extends Controller
                 'diem_max' => $request->diem_max ?? $request->maxScore ?? 1,
             ]);
 
+            // Handle audio upload if present
+            if ($request->hasFile('audio_file')) {
+                $this->handleQuestionAudioUpload($request, $question);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Tạo câu hỏi thành công',
@@ -119,6 +134,9 @@ class CauHoiController extends Controller
                     'ghi_chu' => $question->ghi_chu,
                     'thu_tu' => $question->thu_tu,
                     'diem_max' => $question->diem_max,
+                    'audio_url' => $question->audio_url,
+                    'audio_file_name' => $question->audio_file_name,
+                    'audio_file_size' => $question->audio_file_size,
                     'dap_ans' => [],
                 ],
             ], 201);
@@ -145,7 +163,11 @@ class CauHoiController extends Controller
                 ], 404);
             }
 
-            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+            $currentUserId = auth('sanctum')->id();
+            $currentUser = auth('sanctum')->user();
+            $isAdmin = $currentUser && $currentUser->role === 'admin';
+
+            if ((int)$test->id_giao_vien !== (int)$currentUserId && !$isAdmin) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền sửa câu hỏi của bài test này',
@@ -170,6 +192,11 @@ class CauHoiController extends Controller
                 'diem_max' => $request->diem_max ?? $request->maxScore ?? $question->diem_max,
             ]);
 
+            // Handle audio upload if present
+            if ($request->hasFile('audio_file')) {
+                $this->handleQuestionAudioUpload($request, $question);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Cập nhật câu hỏi thành công',
@@ -182,6 +209,9 @@ class CauHoiController extends Controller
                     'ghi_chu' => $question->ghi_chu,
                     'thu_tu' => $question->thu_tu,
                     'diem_max' => $question->diem_max,
+                    'audio_url' => $question->audio_url,
+                    'audio_file_name' => $question->audio_file_name,
+                    'audio_file_size' => $question->audio_file_size,
                 ],
             ], 200);
         } catch (\Exception $e) {
@@ -207,7 +237,11 @@ class CauHoiController extends Controller
                 ], 404);
             }
 
-            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+            $currentUserId = auth('sanctum')->id();
+            $currentUser = auth('sanctum')->user();
+            $isAdmin = $currentUser && $currentUser->role === 'admin';
+
+            if ((int)$test->id_giao_vien !== (int)$currentUserId && !$isAdmin) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền xóa câu hỏi của bài test này',
@@ -234,6 +268,48 @@ class CauHoiController extends Controller
                 'success' => false,
                 'message' => 'Lỗi khi xóa câu hỏi: ' . $e->getMessage(),
             ], 500);
+        }
+    }
+
+    /**
+     * Handle question audio file upload
+     */
+    private function handleQuestionAudioUpload($request, $question)
+    {
+        try {
+            if (!$request->hasFile('audio_file')) {
+                return;
+            }
+
+            $file = $request->file('audio_file');
+
+            // Validate file
+            if ($file->getSize() > 50 * 1024 * 1024) { // 50MB max
+                throw new \Exception('Dung lượng file không được vượt quá 50MB');
+            }
+
+            if ($file->getMimeType() !== 'audio/mpeg' && $file->getClientOriginalExtension() !== 'mp3') {
+                throw new \Exception('Chỉ chấp nhận file MP3');
+            }
+
+            // Remove old audio file if exists
+            if ($question->audio_file_name && Storage::disk('public')->exists('audio/questions/' . $question->audio_file_name)) {
+                Storage::disk('public')->delete('audio/questions/' . $question->audio_file_name);
+            }
+
+            // Store new audio file
+            $filename = 'question_' . $question->id . '_' . time() . '.mp3';
+            $path = $file->storeAs('audio/questions', $filename, 'public');
+
+            // Update question with audio info
+            $question->update([
+                'audio_file_name' => $filename,
+                'audio_file_size' => $file->getSize(),
+                'audio_url' => Storage::url($path),
+            ]);
+        } catch (\Exception $e) {
+            // Log error but don't fail the entire request
+            Log::error('Error uploading question audio: ' . $e->getMessage());
         }
     }
 }

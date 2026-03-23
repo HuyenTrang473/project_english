@@ -62,6 +62,9 @@
                 <!-- Quản lý Đề thi -->
                 <AdminTestManager v-else-if="activeMenu === 'tests'" />
 
+                <!-- Quản lý Giáo viên -->
+                <AdminTeacherManager v-else-if="activeMenu === 'teachers'" />
+
                 <!-- Thống kê -->
                 <div v-else-if="activeMenu === 'stats'" class="placeholder-section">
                     <h4>Thống kê</h4>
@@ -74,25 +77,30 @@
 
 <script>
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 import http from '@/api/axiosClient';
 import AdminTestManager from './AdminTestManager.vue';
+import AdminTeacherManager from './AdminTeacherManager.vue';
 
 export default {
     components: {
         AdminTestManager,
+        AdminTeacherManager,
     },
     setup() {
         const router = useRouter();
-        return { router };
+        const authStore = useAuthStore();
+        return { router, authStore };
     },
     data() {
         return {
             activeMenu: 'dashboard',
-            menuItems: [
-                { key: 'dashboard', label: 'Dashboard', icon: '🏠', route: null },
-                { key: 'lessons', label: 'Quản lý Bài học', icon: '📚', route: '/lessons' },
-                { key: 'tests', label: 'Quản lý Đề thi', icon: '📝', route: '/tests' },
-                { key: 'stats', label: 'Thống kê', icon: '📊', route: null },
+            allMenuItems: [
+                { key: 'dashboard', label: 'Dashboard', icon: '🏠', route: null, adminOnly: false },
+                { key: 'lessons', label: 'Quản lý Bài học', icon: '📚', route: '/lessons', adminOnly: false },
+                { key: 'tests', label: 'Quản lý Đề thi', icon: '📝', route: '/tests', adminOnly: false },
+                { key: 'teachers', label: 'Quản lý Giáo viên', icon: '👨‍🏫', route: null, adminOnly: true },
+                { key: 'stats', label: 'Thống kê', icon: '📊', route: null, adminOnly: false },
             ],
             stats: {
                 lessons: 0,
@@ -103,6 +111,15 @@ export default {
         };
     },
     computed: {
+        menuItems() {
+            // Filter menu items based on user role
+            return this.allMenuItems.filter((item) => {
+                if (item.adminOnly) {
+                    return this.authStore.isAdmin;
+                }
+                return true;
+            });
+        },
         currentTitle() {
             const item = this.menuItems.find((m) => m.key === this.activeMenu);
             return item ? item.label : 'Dashboard';
@@ -110,9 +127,18 @@ export default {
     },
     mounted() {
         this.loadStats();
+        // Ensure teachers can't manually access teacher management
+        if (this.activeMenu === 'teachers' && !this.authStore.isAdmin) {
+            this.activeMenu = 'dashboard';
+        }
     },
     methods: {
         handleMenuClick(item) {
+            // Check if user has permission to access this menu
+            if (item.adminOnly && !this.authStore.isAdmin) {
+                alert('Bạn không có quyền truy cập mục này');
+                return;
+            }
             this.activeMenu = item.key;
             // Navigate to route if exists
             if (item.route) {
@@ -125,8 +151,9 @@ export default {
                 if (res.data) {
                     this.stats = { ...this.stats, ...res.data };
                 }
-            } catch {
+            } catch (error) {
                 // Stats API may not exist yet — show zeros
+                console.error('Error loading stats:', error);
             }
         },
     },

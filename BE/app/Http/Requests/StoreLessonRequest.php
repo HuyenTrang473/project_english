@@ -11,16 +11,41 @@ class StoreLessonRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth('sanctum')->check() && auth('sanctum')->user()->isTeacher();
+        $user = auth('sanctum')->user();
+        return auth('sanctum')->check() && $user && ($user->isTeacher() || $user->isAdmin());
     }
 
     protected function prepareForValidation()
     {
-        $this->merge([
-            'tieu_de' => $this->title ?? $this->tieu_de,
-            'mo_ta' => $this->description ?? $this->mo_ta,
-            'noi_dung' => $this->content ?? $this->noi_dung,
-            'trang_thai' => $this->status ?? $this->trang_thai,
+        // Log incoming data before any processing
+        $allData = $this->all();
+        \Log::info('StoreLessonRequest BEFORE processing:', [
+            'all_data_keys' => array_keys($allData),
+            'tieu_de' => $this->input('tieu_de'),
+            'noi_dung' => $this->input('noi_dung'),
+            'trang_thai' => $this->input('trang_thai'),
+            'mo_ta' => $this->input('mo_ta'),
+            'has_file' => $this->hasFile('file'),
+        ]);
+
+        $merge = [];
+
+        // Cast trang_thai to integer for proper validation
+        if ($this->has('trang_thai')) {
+            $trang_thai = $this->input('trang_thai');
+            $merge['trang_thai'] = is_numeric($trang_thai) ? (int) $trang_thai : null;
+        }
+
+        if (!empty($merge)) {
+            $this->merge($merge);
+        }
+
+        // Log after merge
+        \Log::info('StoreLessonRequest AFTER merge:', [
+            'tieu_de' => $this->input('tieu_de'),
+            'noi_dung' => $this->input('noi_dung'),
+            'trang_thai' => $this->input('trang_thai'),
+            'mo_ta' => $this->input('mo_ta'),
         ]);
     }
 
@@ -32,10 +57,11 @@ class StoreLessonRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'tieu_de' => ['required', 'string', 'max:255'],
+            'tieu_de' => ['required', 'string', 'max:255', 'filled'],
             'mo_ta' => ['nullable', 'string', 'max:1000'],
-            'noi_dung' => ['required', 'string'],
-            'trang_thai' => ['required', 'integer', 'in:1,2'], // 1: draft, 2: published
+            'noi_dung' => ['required', 'string', 'min:1', 'filled'],
+            'trang_thai' => ['required', 'integer', 'in:1,2'],
+            'file' => ['nullable', 'file', 'mimes:pdf,doc,docx,txt', 'max:10240'],
         ];
     }
 
@@ -49,9 +75,23 @@ class StoreLessonRequest extends FormRequest
             'mo_ta.max' => 'Mô tả không được vượt quá 1000 ký tự',
             'noi_dung.required' => 'Nội dung là bắt buộc',
             'noi_dung.string' => 'Nội dung phải là chuỗi ký tự',
+            'noi_dung.min' => 'Nội dung không được để trống',
             'trang_thai.required' => 'Trạng thái là bắt buộc',
             'trang_thai.integer' => 'Trạng thái phải là một số',
             'trang_thai.in' => 'Trạng thái không hợp lệ',
+            'file.file' => 'Tệp upload không hợp lệ',
+            'file.mimes' => 'Định dạng file phải là PDF, DOC, DOCX hoặc TXT',
+            'file.max' => 'File không được vượt quá 10MB',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
+    {
+        // Log validation errors for debugging
+        \Log::error('Validation failed:', $validator->errors()->toArray());
+        throw new \Illuminate\Validation\ValidationException($validator);
     }
 }

@@ -26,6 +26,7 @@ class StoreCauHoiRequest extends FormRequest
             'ghi_chu' => 'nullable|string|max:1000',
             'hinh_anh_url' => 'nullable|url', // Optional now
             'diem_max' => 'nullable|numeric|min:0.5|max:100', // Optional now
+            'audio_file' => 'nullable|file|mimes:mp3|max:51200', // max 50MB for audio
             // Legacy support
             'content' => 'nullable|string|min:5|max:2000',
             'type' => 'nullable|integer|in:1,2,3',

@@ -25,7 +25,11 @@ const routes = [
     path: "/admin",
     alias: "/home",
     component: () => import("@/components/Admin/index.vue"),
-    meta: { layout: "admin", requiresAuth: true, roles: ["admin"] },
+    meta: {
+      layout: "admin",
+      requiresAuth: true,
+      roles: ["admin", "giao_vien"],
+    },
     children: [],
   },
   // Teacher Routes
@@ -112,6 +116,41 @@ const routes = [
     name: "DoTest",
     component: () => import("@/components/DoTest.vue"),
     meta: { layout: "client", requiresAuth: true, roles: ["hoc_sinh"] },
+  },
+  // Lesson Routes
+  {
+    path: "/lessons",
+    name: "LessonList",
+    component: () => import("@/views/LessonList.vue"),
+    meta: { layout: "client", requiresAuth: false },
+  },
+  // Specific routes BEFORE generic :id route
+  {
+    path: "/lessons/create",
+    name: "CreateLesson",
+    component: () => import("@/views/LessonEditor.vue"),
+    meta: {
+      layout: "admin",
+      requiresAuth: true,
+      roles: ["giao_vien", "admin"],
+    },
+  },
+  {
+    path: "/lessons/:id/edit",
+    name: "EditLesson",
+    component: () => import("@/views/LessonEditor.vue"),
+    meta: {
+      layout: "admin",
+      requiresAuth: true,
+      roles: ["giao_vien", "admin"],
+    },
+  },
+  // Generic route LAST
+  {
+    path: "/lessons/:id",
+    name: "LessonDetail",
+    component: () => import("@/views/LessonDetail.vue"),
+    meta: { layout: "client", requiresAuth: false },
   },
   // 404
   {

@@ -13,15 +13,16 @@ use App\Models\StudentAnswerDetail;
 use App\Models\TestAnalytic;
 use App\Models\QuestionAnalytic;
 use App\Http\Resources\BaiTestResource;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class BaiTestController extends Controller
 {
-    /**
-     * Danh sách bài test của một bài học (public - với pagination & filter)
-     */
+    // Danh sách bài test của một bài học (public - với pagination & filter)
+
     public function indexByLesson($lessonId, Request $request)
     {
         try {
@@ -66,9 +67,7 @@ class BaiTestController extends Controller
         }
     }
 
-    /**
-     * Danh sách bài test của giáo viên (giáo viên - với pagination & filter)
-     */
+    // Danh sách bài test của giáo viên (giáo viên - với pagination & filter)
     public function myTests(Request $request)
     {
         try {
@@ -112,9 +111,7 @@ class BaiTestController extends Controller
         }
     }
 
-    /**
-     * Lấy chi tiết bài test (học sinh - với shuffle nếu cần)
-     */
+    // Lấy chi tiết bài test (học sinh - với shuffle nếu cần)
     public function show($id, Request $request)
     {
         try {
@@ -211,11 +208,28 @@ class BaiTestController extends Controller
                 ], 404);
             }
 
-            // Check authorization - only teacher who owns the test can view it
-            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+            // Check authorization - only teacher who owns the test or admin can view it
+            $currentUserId = auth('sanctum')->id();
+            $currentUser = auth('sanctum')->user();
+            $isAdmin = $currentUser && ($currentUser->role === 'admin' || $currentUser->role === 2);
+
+            Log::info('ShowForTeacher Authorization Check', [
+                'test_id' => $id,
+                'test_giao_vien_id' => $test->id_giao_vien,
+                'current_user_id' => $currentUserId,
+                'current_user' => $currentUser ? [
+                    'id' => $currentUser->id,
+                    'role' => $currentUser->role,
+                    'name' => $currentUser->name,
+                ] : 'null',
+                'is_admin' => $isAdmin,
+                'comparison' => (int)$test->id_giao_vien . ' === ' . (int)$currentUserId,
+            ]);
+
+            if ((int)$test->id_giao_vien !== (int)$currentUserId && !$isAdmin) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn không có quyền xem bài test này',
+                    'message' => 'Bạn không có quyền xem bài test này - Debug: Test by ' . $test->id_giao_vien . ', You are ' . $currentUserId . ', Admin: ' . ($isAdmin ? 'yes' : 'no'),
                 ], 403);
             }
 
@@ -243,6 +257,8 @@ class BaiTestController extends Controller
                 'id_giao_vien' => auth('sanctum')->id(),
                 'id_lesson' => $request->id_lesson,
                 'ten_bai_test' => $request->ten_bai_test,
+                'loai_quiz' => $request->loai_quiz ?? 'mixed',
+                'chi_tiet_loai_quiz' => $request->chi_tiet_loai_quiz,
                 'mo_ta' => $request->mo_ta,
                 'thoi_gian_toi_da' => $request->thoi_gian_toi_da,
                 'diem_tong_max' => $request->diem_tong_max,
@@ -270,6 +286,12 @@ class BaiTestController extends Controller
                         'thu_tu' => $index + 1,
                         'diem_max' => $questionData['diem_max'] ?? $questionData['diem_toi_da'] ?? 1,
                     ]);
+
+                    // Handle audio upload if present
+                    $audioKey = 'audio_' . $index;
+                    if ($request->hasFile($audioKey)) {
+                        $this->handleQuestionAudioUpload($request, $audioKey, $question);
+                    }
 
                     // Create answers if provided
                     if (isset($questionData['answers']) && is_array($questionData['answers'])) {
@@ -319,10 +341,22 @@ class BaiTestController extends Controller
                 ], 404);
             }
 
-            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+            $currentUserId = auth('sanctum')->id();
+            $currentUser = auth('sanctum')->user();
+            $isAdmin = $currentUser && ($currentUser->role === 'admin' || $currentUser->role === 2);
+
+            Log::info('Update BaiTest Authorization Check', [
+                'test_id' => $id,
+                'test_giao_vien_id' => $test->id_giao_vien,
+                'current_user_id' => $currentUserId,
+                'current_user_role' => $currentUser ? $currentUser->role : 'null',
+                'is_admin' => $isAdmin,
+            ]);
+
+            if ((int)$test->id_giao_vien !== (int)$currentUserId && !$isAdmin) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn không có quyền cập nhật bài test này',
+                    'message' => 'Bạn không có quyền cập nhật bài test này - Debug: Test by ' . $test->id_giao_vien . ', You are ' . $currentUserId . ', Admin: ' . ($isAdmin ? 'yes' : 'no'),
                 ], 403);
             }
 
@@ -331,6 +365,8 @@ class BaiTestController extends Controller
             $test->update([
                 'id_lesson' => $request->id_lesson,
                 'ten_bai_test' => $request->ten_bai_test,
+                'loai_quiz' => $request->loai_quiz ?? $test->loai_quiz,
+                'chi_tiet_loai_quiz' => $request->chi_tiet_loai_quiz ?? $test->chi_tiet_loai_quiz,
                 'mo_ta' => $request->mo_ta,
                 'thoi_gian_toi_da' => $request->thoi_gian_toi_da,
                 'diem_tong_max' => $request->diem_tong_max,
@@ -370,6 +406,15 @@ class BaiTestController extends Controller
                             'thu_tu' => $index + 1,
                             'diem_max' => $questionData['diem_max'] ?? $questionData['diem_toi_da'] ?? $existingQuestion->diem_max,
                         ]);
+
+                        // Handle audio upload if present
+                        $audioKey = 'audio_' . $index;
+                        if ($request->hasFile($audioKey)) {
+                            $this->handleQuestionAudioUpload($request, $audioKey, $existingQuestion);
+                        } elseif ($questionData['_removeAudio'] ?? false) {
+                            // Remove audio if flagged
+                            $this->removeQuestionAudio($existingQuestion);
+                        }
                     } else {
                         // Create new question (has no ID or temporary ID)
                         $question = CauHoi::create([
@@ -382,6 +427,12 @@ class BaiTestController extends Controller
                             'thu_tu' => $index + 1,
                             'diem_max' => $questionData['diem_max'] ?? $questionData['diem_toi_da'] ?? 1,
                         ]);
+
+                        // Handle audio upload if present
+                        $audioKey = 'audio_' . $index;
+                        if ($request->hasFile($audioKey)) {
+                            $this->handleQuestionAudioUpload($request, $audioKey, $question);
+                        }
 
                         // Create answers for new question
                         if (isset($questionData['answers']) && is_array($questionData['answers'])) {
@@ -451,7 +502,11 @@ class BaiTestController extends Controller
                 ], 404);
             }
 
-            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+            $currentUserId = auth('sanctum')->id();
+            $currentUser = auth('sanctum')->user();
+            $isAdmin = $currentUser && $currentUser->role === 'admin';
+
+            if ((int)$test->id_giao_vien !== (int)$currentUserId && !$isAdmin) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền xóa bài test này',
@@ -795,7 +850,11 @@ class BaiTestController extends Controller
                 ], 404);
             }
 
-            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+            $currentUserId = auth('sanctum')->id();
+            $currentUser = auth('sanctum')->user();
+            $isAdmin = $currentUser && $currentUser->role === 'admin';
+
+            if ((int)$test->id_giao_vien !== (int)$currentUserId && !$isAdmin) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền xem thống kê bài test này',
@@ -1011,5 +1070,72 @@ class BaiTestController extends Controller
             'so_cau_bo_trong' => $result->so_cau_bo_trong,
             'thoi_gian_su_dung_phut' => round($result->thoi_gian_su_dung / 60, 2),
         ];
+    }
+
+    /**
+     * Handle question audio file upload
+     */
+    private function handleQuestionAudioUpload($request, $audioKey, $question)
+    {
+        try {
+            if (!$request->hasFile($audioKey)) {
+                return;
+            }
+
+            $file = $request->file($audioKey);
+
+            // Validate file
+            if ($file->getSize() > 50 * 1024 * 1024) { // 50MB max
+                throw new \Exception('Dung lượng file không được vượt quá 50MB');
+            }
+
+            if ($file->getMimeType() !== 'audio/mpeg' && $file->getClientOriginalExtension() !== 'mp3') {
+                throw new \Exception('Chỉ chấp nhận file MP3');
+            }
+
+            // Remove old audio file if exists
+            if ($question->audio_file_name && Storage::disk('public')->exists('audio/questions/' . $question->audio_file_name)) {
+                Storage::disk('public')->delete('audio/questions/' . $question->audio_file_name);
+            }
+
+            // Store new audio file
+            $filename = 'question_' . $question->id . '_' . time() . '.mp3';
+            $path = $file->storeAs('audio/questions', $filename, 'public');
+
+            // Update question with audio info
+            $question->update([
+                'audio_file_name' => $filename,
+                'audio_file_size' => $file->getSize(),
+                'audio_url' => Storage::url($path),
+            ]);
+        } catch (\Exception $e) {
+            // Log error but don't fail the entire request
+            Log::error('Error uploading question audio: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Remove question audio files
+     */
+    private function removeQuestionAudio($question)
+    {
+        try {
+            if ($question->audio_file_name) {
+                // Delete file from storage
+                if (Storage::disk('public')->exists('audio/questions/' . $question->audio_file_name)) {
+                    Storage::disk('public')->delete('audio/questions/' . $question->audio_file_name);
+                }
+
+                // Update question - remove audio info
+                $question->update([
+                    'audio_file_name' => null,
+                    'audio_file_size' => 0,
+                    'audio_url' => null,
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail
+            Log::error('Error removing question audio: ' . $e->getMessage());
+        }
     }
 }

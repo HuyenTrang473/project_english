@@ -6,8 +6,7 @@ use App\Models\User;
 
 $users = User::select('id', 'name', 'email', 'role', 'is_active')->get();
 
-echo "\n📋 DANH SÁCH CÁC USER TRONG HỆ THỐNG:\n";
-echo "=====================================\n";
+echo "\n DANH SÁCH CÁC USER TRONG HỆ THỐNG:\n";
 
 if ($users->isEmpty()) {
     echo "Không có user nào trong database\n";
@@ -24,6 +23,6 @@ if ($users->isEmpty()) {
     }
 }
 
-echo "\n🔧 Để tạo giáo viên mới, chạy:\n";
+echo "\n Để tạo giáo viên mới, chạy:\n";
 echo "   php artisan tinker\n";
 echo "   > App\\Models\\User::create(['name' => 'Teacher', 'email' => 'teacher@test.com', 'password' => 'password', 'role' => 'giao_vien', 'is_active' => true])\n";

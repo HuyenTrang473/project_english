@@ -74,8 +74,20 @@ class AdminController extends Controller
     {
         try {
             $teachers = User::where('role', 'giao_vien')
-                ->select('id', 'name', 'email')
-                ->get();
+                ->select('id', 'name', 'email', 'is_active', 'created_at')
+                ->withCount('baiTests as test_count')
+                ->get()
+                ->map(function ($teacher) {
+                    return [
+                        'id' => $teacher->id,
+                        'name' => $teacher->name,
+                        'email' => $teacher->email,
+                        'active' => $teacher->is_active,
+                        'lessonCount' => Lesson::where('id_giao_vien', $teacher->id)->count(),
+                        'testCount' => $teacher->test_count,
+                        'created_at' => $teacher->created_at,
+                    ];
+                });
 
             return response()->json([
                 'success' => true,
@@ -85,6 +97,91 @@ class AdminController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Lỗi khi lấy danh sách giáo viên: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Cập nhật giáo viên (Admin)
+     */
+    public function updateTeacher(\Illuminate\Http\Request $request, $id)
+    {
+        try {
+            $teacher = User::findOrFail($id);
+
+            $validated = $request->validate([
+                'name' => ['nullable', 'string', 'max:255'],
+                'email' => ['nullable', 'email', 'unique:users,email,' . $id],
+                'password' => ['nullable', 'string', 'min:8'],
+                'active' => ['nullable', 'boolean'],
+            ]);
+
+            if ($validated['name'] ?? null) {
+                $teacher->name = $validated['name'];
+            }
+            if ($validated['email'] ?? null) {
+                $teacher->email = $validated['email'];
+            }
+            if ($validated['password'] ?? null) {
+                $teacher->password = Hash::make($validated['password']);
+            }
+            if (isset($validated['active'])) {
+                $teacher->is_active = $validated['active'];
+            }
+
+            $teacher->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật giáo viên thành công',
+                'data' => [
+                    'id' => $teacher->id,
+                    'name' => $teacher->name,
+                    'email' => $teacher->email,
+                    'active' => $teacher->is_active,
+                ],
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu không hợp lệ',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi cập nhật giáo viên: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Xóa giáo viên (Admin)
+     */
+    public function deleteTeacher($id)
+    {
+        try {
+            $teacher = User::findOrFail($id);
+
+            // Check if teacher has lessons
+            $lessonCount = Lesson::where('id_giao_vien', $id)->count();
+            if ($lessonCount > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không thể xóa giáo viên có bài học. Vui lòng xóa bài học trước!',
+                ], 400);
+            }
+
+            $teacher->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Xóa giáo viên thành công',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi xóa giáo viên: ' . $e->getMessage(),
             ], 500);
         }
     }

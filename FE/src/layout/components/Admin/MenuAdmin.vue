@@ -34,6 +34,15 @@
 						</a>
 					</router-link>
 				</li>
+				<li class="nav-item">
+					<router-link to="/lessons">
+						<a class="nav-link" href="/lessons">
+							<div class="parent-icon"><i class="fa-solid fa-book"></i>
+							</div>
+							<div class="menu-title">📚 Quản Lý Bài Học</div>
+						</a>
+					</router-link>
+				</li>
 			</ul>
 		</nav>
 	</div>

@@ -18,6 +18,9 @@ class CauHoi extends Model
         'loai_cau_hoi',
         'ghi_chu',
         'hinh_anh_url',
+        'audio_url',
+        'audio_file_name',
+        'audio_file_size',
         'thu_tu',
         'diem_max',
     ];

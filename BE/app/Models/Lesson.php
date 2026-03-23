@@ -17,6 +17,9 @@ class Lesson extends Model
         'mo_ta',
         'noi_dung',
         'trang_thai',
+        'file_path',
+        'file_type',
+        'file_size',
     ];
 
     protected $casts = [
@@ -55,19 +58,26 @@ class Lesson extends Model
         return $query->where('trang_thai', 1);
     }
 
-    public function scopeByTeacher($query, $teacherId)
-    {
-        return $query->where('id_giao_vien', $teacherId);
-    }
-
     // Helpers
     public function isPublished(): bool
     {
-        return $this->trang_thai == 2;
+        return $this->trang_thai === 2;
     }
 
     public function isDraft(): bool
     {
-        return $this->trang_thai == 1;
+        return $this->trang_thai === 1;
+    }
+
+    public function publish(): void
+    {
+        $this->trang_thai = 2;
+        $this->save();
+    }
+
+    public function unpublish(): void
+    {
+        $this->trang_thai = 1;
+        $this->save();
     }
 }

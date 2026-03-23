@@ -11,7 +11,7 @@ class SubmitTestRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth('sanctum')->check() && auth('sanctum')->user()->isStudent();
+        return auth('sanctum')->check() && (auth('sanctum')->user()->isStudent() || auth('sanctum')->user()->isAdmin());
     }
 
     protected function prepareForValidation()

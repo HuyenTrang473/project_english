@@ -25,7 +25,11 @@ class DapAnController extends Controller
                 ], 404);
             }
 
-            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+            $currentUserId = auth('sanctum')->id();
+            $currentUser = auth('sanctum')->user();
+            $isAdmin = $currentUser && $currentUser->role === 'admin';
+
+            if ((int)$test->id_giao_vien !== (int)$currentUserId && !$isAdmin) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền thêm đáp án',
@@ -90,7 +94,11 @@ class DapAnController extends Controller
                 ], 404);
             }
 
-            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+            $currentUserId = auth('sanctum')->id();
+            $currentUser = auth('sanctum')->user();
+            $isAdmin = $currentUser && $currentUser->role === 'admin';
+
+            if ((int)$test->id_giao_vien !== (int)$currentUserId && !$isAdmin) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền sửa đáp án',
@@ -159,7 +167,11 @@ class DapAnController extends Controller
                 ], 404);
             }
 
-            if ($test->id_giao_vien !== auth('sanctum')->id()) {
+            $currentUserId = auth('sanctum')->id();
+            $currentUser = auth('sanctum')->user();
+            $isAdmin = $currentUser && $currentUser->role === 'admin';
+
+            if ((int)$test->id_giao_vien !== (int)$currentUserId && !$isAdmin) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền xóa đáp án',

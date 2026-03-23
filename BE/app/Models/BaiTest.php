@@ -15,6 +15,8 @@ class BaiTest extends Model
         'id_giao_vien',
         'id_lesson',
         'ten_bai_test',
+        'loai_quiz',
+        'chi_tiet_loai_quiz',
         'mo_ta',
         'thoi_gian_toi_da',
         'diem_tong_max',
@@ -40,6 +42,7 @@ class BaiTest extends Model
         'cho_xem_lai_test' => 'boolean',
         'ngay_bat_dau' => 'datetime',
         'ngay_ket_thuc' => 'datetime',
+        'loai_quiz' => 'string',
     ];
 
     // Relationships
@@ -82,6 +85,11 @@ class BaiTest extends Model
     public function scopeByTeacher($query, $teacherId)
     {
         return $query->where('id_giao_vien', $teacherId);
+    }
+
+    public function scopeByQuizType($query, $loaiQuiz)
+    {
+        return $query->where('loai_quiz', $loaiQuiz);
     }
 
     // Helpers
