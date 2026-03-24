@@ -79,14 +79,18 @@ const routes = [
   {
     path: "/tests/:id/view",
     name: "ViewTest",
-    component: () => import("@/views/TestList.vue"),
-    meta: { layout: "client", requiresAuth: true },
+    component: () => import("@/views/TestBuilder.vue"),
+    meta: {
+      layout: "admin",
+      requiresAuth: true,
+      roles: ["giao_vien", "admin"],
+    },
   },
   {
     path: "/tests/:id/take",
     name: "TakeTest",
     component: () => import("@/views/TestTaker.vue"),
-    meta: { layout: "client", requiresAuth: true, roles: ["hoc_sinh"] },
+    meta: { layout: "client", requiresAuth: true },
   },
   {
     path: "/tests/:id/result",

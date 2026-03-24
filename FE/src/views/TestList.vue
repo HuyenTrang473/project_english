@@ -3,64 +3,39 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
       <h1 class="mb-0">📋 Danh Sách Bài Test</h1>
-      
+
       <!-- Action Buttons -->
       <div class="d-flex gap-2 flex-wrap">
         <!-- View Mode Toggle -->
         <div class="btn-group" role="group">
-          <button 
-            type="button"
-            :class="['btn', viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary']"
-            @click="viewMode = 'grid'"
-            title="Xem dạng lưới"
-          >
+          <button type="button" :class="['btn', viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary']"
+            @click="viewMode = 'grid'" title="Xem dạng lưới">
             <i class="fa fa-th"></i>
           </button>
-          <button 
-            type="button"
-            :class="['btn', viewMode === 'list' ? 'btn-primary' : 'btn-outline-secondary']"
-            @click="viewMode = 'list'"
-            title="Xem dạng danh sách"
-          >
+          <button type="button" :class="['btn', viewMode === 'list' ? 'btn-primary' : 'btn-outline-secondary']"
+            @click="viewMode = 'list'" title="Xem dạng danh sách">
             <i class="fa fa-list"></i>
           </button>
         </div>
 
         <!-- Refresh Button -->
-        <button 
-          @click="refreshData"
-          :disabled="loading"
-          class="btn btn-outline-secondary"
-          title="Tải lại dữ liệu"
-        >
+        <button @click="refreshData" :disabled="loading" class="btn btn-outline-secondary" title="Tải lại dữ liệu">
           <i :class="['fa fa-refresh', { 'fa-spin': loading }]"></i>
         </button>
 
         <!-- Export Button -->
-        <button 
-          @click="exportData"
-          :disabled="tests.length === 0"
-          class="btn btn-outline-info"
-          title="Xuất dữ liệu CSV"
-        >
+        <button @click="exportData" :disabled="tests.length === 0" class="btn btn-outline-info"
+          title="Xuất dữ liệu CSV">
           <i class="fa fa-download"></i> Xuất
         </button>
 
         <!-- Settings Button -->
-        <button 
-          @click="showSettings = !showSettings"
-          class="btn btn-outline-secondary"
-          title="Cài đặt"
-        >
+        <button @click="showSettings = !showSettings" class="btn btn-outline-secondary" title="Cài đặt">
           <i class="fa fa-cog"></i>
         </button>
 
         <!-- Create New Test Button -->
-        <router-link 
-          v-if="isTeacher || isAdmin" 
-          to="/tests/create-template" 
-          class="btn btn-primary"
-        >
+        <router-link v-if="isTeacher || isAdmin" to="/tests/create-template" class="btn btn-primary">
           <i class="fa fa-plus"></i> Tạo Mới
         </router-link>
       </div>
@@ -111,31 +86,18 @@
       <div class="card-body">
         <div class="row g-3">
           <div class="col-md-6">
-            <input 
-              v-model="filters.search"
-              type="text" 
-              class="form-control" 
-              placeholder="Tìm kiếm theo tên bài test..."
-              @input="onSearchChange"
-            >
+            <input v-model="filters.search" type="text" class="form-control" placeholder="Tìm kiếm theo tên bài test..."
+              @input="onSearchChange">
           </div>
           <div class="col-md-3">
-            <select 
-              v-model="filters.status"
-              class="form-select"
-              @change="onFilterChange"
-            >
+            <select v-model="filters.status" class="form-select" @change="onFilterChange">
               <option :value="null">Tất cả trạng thái</option>
               <option value="1">Nháp</option>
               <option value="2">Đã Công Bố</option>
             </select>
           </div>
           <div class="col-md-3">
-            <select 
-              v-model="filters.sortBy"
-              class="form-select"
-              @change="onFilterChange"
-            >
+            <select v-model="filters.sortBy" class="form-select" @change="onFilterChange">
               <option value="created_at">Mới Nhất</option>
               <option value="ten_bai_test">Tên (A-Z)</option>
               <option value="updated_at">Cập Nhật Gần Đây</option>
@@ -159,11 +121,7 @@
 
     <!-- Tests List - Grid View -->
     <div v-if="!loading && tests.length > 0 && viewMode === 'grid'" class="row">
-      <div 
-        v-for="test in tests" 
-        :key="test.id"
-        class="col-md-6 col-lg-4 mb-4"
-      >
+      <div v-for="test in tests" :key="test.id" class="col-md-6 col-lg-4 mb-4">
         <div class="card h-100 shadow-sm hover-card">
           <!-- Card Header -->
           <div class="card-header bg-primary text-white p-3">
@@ -178,11 +136,11 @@
                 <i class="fa fa-user"></i> {{ test.giao_vien?.name || 'Unknown' }}
               </p>
               <p v-if="showInfo.time" class="text-muted small mb-2">
-                <i class="fa fa-clock"></i> 
+                <i class="fa fa-clock"></i>
                 {{ test.thoi_gian_toi_da }} phút
               </p>
               <p v-if="showInfo.score" class="text-muted small mb-0">
-                <i class="fa fa-trophy"></i> 
+                <i class="fa fa-trophy"></i>
                 Điểm tối đa: {{ test.diem_tong_max }} điểm
               </p>
             </div>
@@ -192,12 +150,10 @@
 
             <!-- Status Badge -->
             <div v-if="showInfo.status" class="mb-3">
-              <span 
-                :class="[
-                  'badge',
-                  test.trang_thai === 2 ? 'bg-success' : 'bg-secondary'
-                ]"
-              >
+              <span :class="[
+                'badge',
+                test.trang_thai === 2 ? 'bg-success' : 'bg-secondary'
+              ]">
                 {{ test.trang_thai === 2 ? '✓ Công Bố' : '✎ Nháp' }}
               </span>
             </div>
@@ -206,38 +162,22 @@
           <!-- Card Footer -->
           <div class="card-footer bg-light p-3">
             <div class="d-flex gap-2 flex-wrap">
-              <router-link 
-                :to="`/tests/${test.id}/view`"
-                class="btn btn-sm btn-info flex-grow-1"
-              >
+              <router-link :to="`/tests/${test.id}/view`" class="btn btn-sm btn-info flex-grow-1">
                 <i class="fa fa-eye"></i> Xem
               </router-link>
 
-              <router-link 
-                v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)"
-                :to="`/tests/${test.id}/edit`"
-                class="btn btn-sm btn-warning"
-                title="Chỉnh sửa"
-              >
+              <router-link v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)" :to="`/tests/${test.id}/edit`"
+                class="btn btn-sm btn-warning" title="Chỉnh sửa">
                 <i class="fa fa-edit"></i>
               </router-link>
 
-              <button 
-                v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)"
-                @click="onDeleteTest(test.id)"
-                class="btn btn-sm btn-danger"
-                :disabled="loading"
-                title="Xóa"
-              >
+              <button v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)" @click="onDeleteTest(test.id)"
+                class="btn btn-sm btn-danger" :disabled="loading" title="Xóa">
                 <i class="fa fa-trash"></i>
               </button>
 
-              <router-link 
-                v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)"
-                :to="`/tests/${test.id}/analytics`"
-                class="btn btn-sm btn-success"
-                title="Thống kê"
-              >
+              <router-link v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)"
+                :to="`/tests/${test.id}/analytics`" class="btn btn-sm btn-success" title="Thống kê">
                 <i class="fa fa-chart-bar"></i>
               </router-link>
             </div>
@@ -276,50 +216,31 @@
               {{ test.diem_tong_max }} điểm
             </td>
             <td v-if="showInfo.status">
-              <span 
-                :class="[
-                  'badge',
-                  test.trang_thai === 2 ? 'bg-success' : 'bg-secondary'
-                ]"
-              >
+              <span :class="[
+                'badge',
+                test.trang_thai === 2 ? 'bg-success' : 'bg-secondary'
+              ]">
                 {{ test.trang_thai === 2 ? '✓ Công Bố' : '✎ Nháp' }}
               </span>
             </td>
             <td class="text-center">
               <div class="btn-group btn-group-sm" role="group">
-                <router-link 
-                  :to="`/tests/${test.id}/view`"
-                  class="btn btn-info"
-                  title="Xem"
-                >
+                <router-link :to="`/tests/${test.id}/view`" class="btn btn-info" title="Xem">
                   <i class="fa fa-eye"></i>
                 </router-link>
 
-                <router-link 
-                  v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)"
-                  :to="`/tests/${test.id}/edit`"
-                  class="btn btn-warning"
-                  title="Chỉnh sửa"
-                >
+                <router-link v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)" :to="`/tests/${test.id}/edit`"
+                  class="btn btn-warning" title="Chỉnh sửa">
                   <i class="fa fa-edit"></i>
                 </router-link>
 
-                <button 
-                  v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)"
-                  @click="onDeleteTest(test.id)"
-                  class="btn btn-danger"
-                  :disabled="loading"
-                  title="Xóa"
-                >
+                <button v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)" @click="onDeleteTest(test.id)"
+                  class="btn btn-danger" :disabled="loading" title="Xóa">
                   <i class="fa fa-trash"></i>
                 </button>
 
-                <router-link 
-                  v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)"
-                  :to="`/tests/${test.id}/analytics`"
-                  class="btn btn-success"
-                  title="Thống kê"
-                >
+                <router-link v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)"
+                  :to="`/tests/${test.id}/analytics`" class="btn btn-success" title="Thống kê">
                   <i class="fa fa-chart-bar"></i>
                 </router-link>
               </div>
@@ -333,34 +254,21 @@
     <nav v-if="pagination.lastPage > 1" class="mt-4">
       <ul class="pagination justify-content-center">
         <li :class="['page-item', { disabled: pagination.currentPage === 1 }]">
-          <button 
-            class="page-link"
-            @click="goToPage(pagination.currentPage - 1)"
-            :disabled="pagination.currentPage === 1"
-          >
+          <button class="page-link" @click="goToPage(pagination.currentPage - 1)"
+            :disabled="pagination.currentPage === 1">
             Trước
           </button>
         </li>
 
-        <li 
-          v-for="page in pageNumbers"
-          :key="page"
-          :class="['page-item', { active: page === pagination.currentPage }]"
-        >
-          <button 
-            class="page-link"
-            @click="goToPage(page)"
-          >
+        <li v-for="page in pageNumbers" :key="page" :class="['page-item', { active: page === pagination.currentPage }]">
+          <button class="page-link" @click="goToPage(page)">
             {{ page }}
           </button>
         </li>
 
         <li :class="['page-item', { disabled: pagination.currentPage === pagination.lastPage }]">
-          <button 
-            class="page-link"
-            @click="goToPage(pagination.currentPage + 1)"
-            :disabled="pagination.currentPage === pagination.lastPage"
-          >
+          <button class="page-link" @click="goToPage(pagination.currentPage + 1)"
+            :disabled="pagination.currentPage === pagination.lastPage">
             Tiếp
           </button>
         </li>
@@ -404,14 +312,14 @@ const pageNumbers = computed(() => {
   const total = pagination.value.lastPage;
   const current = pagination.value.currentPage;
   const max = 5;
-  
+
   let start = Math.max(1, current - Math.floor(max / 2));
   let end = Math.min(total, start + max - 1);
-  
+
   if (end - start < max - 1) {
     start = Math.max(1, end - max + 1);
   }
-  
+
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 });
 
@@ -439,17 +347,13 @@ const onFilterChange = () => {
 };
 
 const fetchData = async () => {
-  if (isTeacher.value || isAdmin.value) {
-    await testStore.fetchMyTests();
-  } else {
-    await testStore.fetchTestsByLesson(0, filters.value);
-  }
+  await testStore.fetchAllTests(filters.value);
 };
 
 const goToPage = (page) => {
-  testStore.updateFilters({ 
+  testStore.updateFilters({
     ...filters.value,
-    currentPage: page 
+    currentPage: page
   });
   fetchData();
 };
@@ -506,7 +410,7 @@ const exportData = () => {
 };
 
 const updatePageSize = () => {
-  testStore.updateFilters({ 
+  testStore.updateFilters({
     ...filters.value,
     perPage: pageSize.value,
     currentPage: 1
@@ -593,8 +497,13 @@ onMounted(() => {
 }
 
 @keyframes fa-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive Design */
@@ -603,7 +512,8 @@ onMounted(() => {
     flex-direction: column;
   }
 
-  .btn, .btn-group {
+  .btn,
+  .btn-group {
     width: 100%;
   }
 

@@ -396,4 +396,45 @@ class AdminController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Lấy danh sách tất cả bài học (Admin)
+     */
+    public function getAllLessons(\Illuminate\Http\Request $request)
+    {
+        try {
+            $query = Lesson::with('giaoVien:id,name,email');
+
+            // Optional filter by teacher
+            if ($request->has('teacher_id') && $request->teacher_id) {
+                $query->where('id_giao_vien', $request->teacher_id);
+            }
+
+            // Optional filter by status
+            if ($request->has('status') && $request->status) {
+                $query->where('trang_thai', $request->status);
+            }
+
+            $lessons = $query->orderBy('created_at', 'desc')->get();
+
+            return response()->json([
+                'success' => true,
+                // Do not rely on Resource mapping, just return with appropriate fields or map directly
+                'data' => $lessons->map(function ($lesson) {
+                    return [
+                        'id' => $lesson->id,
+                        'title' => $lesson->tieu_de,
+                        'tieu_de' => $lesson->tieu_de, // Kept for FE compatibility
+                        'status' => $lesson->trang_thai,
+                        'teacher_name' => $lesson->giaoVien ? $lesson->giaoVien->name : null,
+                    ];
+                })
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi lấy danh sách bài học: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

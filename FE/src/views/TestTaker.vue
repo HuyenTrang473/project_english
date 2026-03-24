@@ -65,7 +65,7 @@
                   :value="answer.id || index"
                   type="radio" 
                   class="form-check-input"
-                  name="answer"
+                  :name="`question_${questionIndex}`"
                 >
                 <label 
                   :for="`answer_${questionIndex}_${index}`"
@@ -85,6 +85,7 @@
                   value="true"
                   type="radio" 
                   class="form-check-input"
+                  :name="`question_tf_${questionIndex}`"
                 >
                 <label :for="`true_${questionIndex}`" class="form-check-label">
                   ✓ Đúng
@@ -97,6 +98,7 @@
                   value="false"
                   type="radio" 
                   class="form-check-input"
+                  :name="`question_tf_${questionIndex}`"
                 >
                 <label :for="`false_${questionIndex}`" class="form-check-label">
                   ✗ Sai
@@ -294,18 +296,30 @@ const startTimer = () => {
 };
 
 const onSubmitTest = async () => {
+  // Check for unanswered questions
+  const unansweredCount = studentAnswers.value.filter((a, i) => {
+    if (Array.isArray(a)) return a.some(v => v === '' || v === null);
+    return a === '' || a === null || a === undefined;
+  }).length;
+
+  if (unansweredCount > 0) {
+    if (!confirm(`Còn ${unansweredCount} câu hỏi chưa được trả lời. Bạn có muốn xác nhận nộp bài?`)) {
+      return;
+    }
+  } else {
+    if (!confirm('Bạn có chắc chắn muốn nộp bài?')) {
+      return;
+    }
+  }
+
   try {
     const answers = studentAnswers.value.map((answer, index) => ({
-      cau_hoi_id: questions.value[index].id,
-      dap_an_hoc_sinh: answer,
-      loai_cau_hoi: questions.value[index].loai_cau_hoi,
-    }));
+      id_cau_hoi: questions.value[index].id,
+      id_dap_an: typeof answer === 'number' ? answer : null,
+      cau_tra_loi_tu_do: typeof answer === 'string' ? answer : null,
+    })).filter(a => a.id_dap_an || a.cau_tra_loi_tu_do);
 
-    await testStore.submitTest(testId.value, {
-      dai_dien_trang_thai: "completed",
-      answers,
-      thoi_gian_lam_tot: Math.floor((currentTest.value.thoi_gian_toi_da * 60 - timeRemaining.value) / 60),
-    });
+    await testStore.submitTest(testId.value, answers);
 
     submitted.value = true;
     clearInterval(timerInterval.value);

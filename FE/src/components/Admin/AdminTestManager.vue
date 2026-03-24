@@ -10,13 +10,8 @@
 
         <!-- Search & Filter -->
         <div class="search-filter">
-            <input
-                v-model="searchQuery"
-                type="text"
-                class="search-input"
-                placeholder="Tìm kiếm theo tên đề thi..."
-                @input="handleSearch"
-            />
+            <input v-model="searchQuery" type="text" class="search-input" placeholder="Tìm kiếm theo tên đề thi..."
+                @input="handleSearch" />
             <select v-model="filterStatus" class="filter-select" @change="handleFilterChange">
                 <option value="">Tất cả trạng thái</option>
                 <option value="1">Bản nháp</option>
@@ -68,6 +63,9 @@
                         </td>
                         <td class="date-cell">{{ formatDate(test.created_at) }}</td>
                         <td class="actions-cell">
+                            <button class="btn btn-sm btn-primary" @click="viewTest(test.id)" title="Xem">
+                                👁️
+                            </button>
                             <button class="btn btn-sm btn-info" @click="openEditDialog(test)" title="Chỉnh sửa">
                                 ✏️
                             </button>
@@ -87,21 +85,13 @@
 
         <!-- Pagination -->
         <div v-if="pagination" class="pagination">
-            <button
-                v-if="pagination.current_page > 1"
-                class="btn btn-secondary"
-                @click="previousPage"
-            >
+            <button v-if="pagination.current_page > 1" class="btn btn-secondary" @click="previousPage">
                 ← Trước
             </button>
             <span class="page-info">
                 Trang {{ pagination.current_page }} / {{ pagination.last_page }}
             </span>
-            <button
-                v-if="pagination.current_page < pagination.last_page"
-                class="btn btn-secondary"
-                @click="nextPage"
-            >
+            <button v-if="pagination.current_page < pagination.last_page" class="btn btn-secondary" @click="nextPage">
                 Tiếp →
             </button>
         </div>
@@ -147,13 +137,8 @@
                         <!-- Test Name -->
                         <div class="form-group">
                             <label>Tên đề thi *</label>
-                            <input
-                                v-model="formData.ten_bai_test"
-                                type="text"
-                                class="form-input"
-                                placeholder="Nhập tên đề thi"
-                                required
-                            />
+                            <input v-model="formData.ten_bai_test" type="text" class="form-input"
+                                placeholder="Nhập tên đề thi" required />
                             <span v-if="errors.ten_bai_test" class="error-message">
                                 {{ errors.ten_bai_test[0] }}
                             </span>
@@ -162,12 +147,8 @@
                         <!-- Description -->
                         <div class="form-group">
                             <label>Mô tả</label>
-                            <textarea
-                                v-model="formData.mo_ta"
-                                class="form-input form-textarea"
-                                placeholder="Nhập mô tả về đề thi"
-                                rows="3"
-                            ></textarea>
+                            <textarea v-model="formData.mo_ta" class="form-input form-textarea"
+                                placeholder="Nhập mô tả về đề thi" rows="3"></textarea>
                             <span v-if="errors.mo_ta" class="error-message">
                                 {{ errors.mo_ta[0] }}
                             </span>
@@ -177,14 +158,8 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Thời gian tối đa (phút) *</label>
-                                <input
-                                    v-model="formData.thoi_gian_toi_da"
-                                    type="number"
-                                    class="form-input"
-                                    min="1"
-                                    max="1440"
-                                    required
-                                />
+                                <input v-model="formData.thoi_gian_toi_da" type="number" class="form-input" min="1"
+                                    max="1440" required />
                                 <span v-if="errors.thoi_gian_toi_da" class="error-message">
                                     {{ errors.thoi_gian_toi_da[0] }}
                                 </span>
@@ -193,15 +168,8 @@
                             <!-- Max Score -->
                             <div class="form-group">
                                 <label>Điểm tối đa *</label>
-                                <input
-                                    v-model="formData.diem_tong_max"
-                                    type="number"
-                                    class="form-input"
-                                    min="0.01"
-                                    max="10000"
-                                    step="0.01"
-                                    required
-                                />
+                                <input v-model="formData.diem_tong_max" type="number" class="form-input" min="0.01"
+                                    max="10000" step="0.01" required />
                                 <span v-if="errors.diem_tong_max" class="error-message">
                                     {{ errors.diem_tong_max[0] }}
                                 </span>
@@ -212,13 +180,8 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Số lần làm tối đa</label>
-                                <input
-                                    v-model="formData.so_lan_lam_toi_da"
-                                    type="number"
-                                    class="form-input"
-                                    min="1"
-                                    max="100"
-                                />
+                                <input v-model="formData.so_lan_lam_toi_da" type="number" class="form-input" min="1"
+                                    max="100" />
                             </div>
 
                             <!-- Status -->
@@ -261,21 +224,13 @@
                         <!-- Start Date -->
                         <div class="form-group">
                             <label>Ngày bắt đầu</label>
-                            <input
-                                v-model="formData.ngay_bat_dau"
-                                type="datetime-local"
-                                class="form-input"
-                            />
+                            <input v-model="formData.ngay_bat_dau" type="datetime-local" class="form-input" />
                         </div>
 
                         <!-- End Date -->
                         <div class="form-group">
                             <label>Ngày kết thúc</label>
-                            <input
-                                v-model="formData.ngay_ket_thuc"
-                                type="datetime-local"
-                                class="form-input"
-                            />
+                            <input v-model="formData.ngay_ket_thuc" type="datetime-local" class="form-input" />
                         </div>
 
                         <!-- Form Actions -->
@@ -374,9 +329,9 @@ export default {
         },
         async loadLessons() {
             try {
-                const response = await http.get('/lessons');
-                if (response.data && response.data.length > 0) {
-                    this.lessons = response.data;
+                const response = await http.get('/admin/lessons');
+                if (response.data && response.data.data && response.data.data.length > 0) {
+                    this.lessons = response.data.data;
                 }
             } catch (err) {
                 console.error('Lỗi khi tải danh sách bài học:', err);
@@ -428,6 +383,9 @@ export default {
             };
             this.currentEditId = test.id;
             this.showDialog = true;
+        },
+        viewTest(testId) {
+            this.$router.push(`/tests/${testId}/view`);
         },
         closeDialog() {
             this.showDialog = false;

@@ -1,13 +1,14 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { getLessons } from '@/api/lessonApi';
-import { getListByLesson } from '@/api/testApi';
+import { getListByLesson, getAllTests } from '@/api/testApi';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const courses = ref([]);
+const publishedTests = ref([]);
 const loading = ref(true);
 const featuredTestId = ref(null);
 
@@ -28,11 +29,29 @@ const fetchCourses = async () => {
         const res = await getLessons();
         courses.value = res.data || [];
         await resolveFeaturedTestId(courses.value);
+        await loadPublishedTests();
     } catch (error) {
         console.error("Failed to load courses", error);
     } finally {
         loading.value = false;
     }
+};
+
+const loadPublishedTests = async () => {
+    try {
+        const res = await getAllTests({ status: 2, per_page: 6, sort_by: 'created_at', sort_order: 'desc' });
+        publishedTests.value = res.data || [];
+    } catch (error) {
+        console.error('Failed to load tests', error);
+    }
+};
+
+const goToTest = (testId) => {
+    if (!authStore.isAuthenticated) {
+        router.push({ name: 'Login', query: { redirect: `/tests/${testId}/take` } });
+        return;
+    }
+    router.push(`/tests/${testId}/take`);
 };
 
 const goToFreeTest = () => {
@@ -268,6 +287,55 @@ onMounted(() => {
             </div>
         </section>
 
+        <!-- Tests Section -->
+        <section class="tests-section py-5">
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-center mb-5">
+                    <div>
+                        <h2 class="h2 fw-bold mb-1">📝 Bài Kiểm Tra</h2>
+                        <p class="text-muted mb-0">Làm bài kiểm tra và nhận kết quả chấm điểm ngay lập tức</p>
+                    </div>
+                    <router-link to="/tests" class="btn btn-link text-decoration-none">
+                        Xem tất cả <i class="fa-solid fa-arrow-right list-inline-item"></i>
+                    </router-link>
+                </div>
+
+                <div v-if="publishedTests.length === 0" class="text-center text-muted py-4">
+                    <p>Hiện chưa có bài kiểm tra nào.</p>
+                </div>
+
+                <div v-else class="row g-4">
+                    <div v-for="test in publishedTests" :key="test.id" class="col-md-6 col-lg-4">
+                        <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden test-card">
+                            <div class="card-body p-4 d-flex flex-column">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <span class="badge bg-soft-success text-success rounded-pill px-3 py-1">
+                                        <i class="fas fa-clock me-1"></i>{{ test.thoi_gian_toi_da }} phút
+                                    </span>
+                                    <span class="badge bg-soft-primary text-primary rounded-pill px-3 py-1">
+                                        <i class="fas fa-star me-1"></i>{{ test.diem_tong_max }} điểm
+                                    </span>
+                                </div>
+                                <h5 class="card-title fw-bold mb-2">{{ test.ten_bai_test }}</h5>
+                                <p class="card-text text-muted small flex-grow-1">
+                                    {{ test.mo_ta || 'Bài kiểm tra trắc nghiệm tiếng Anh' }}
+                                </p>
+                                <div class="d-flex align-items-center justify-content-between mt-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>
+                                        {{ test.giao_vien?.name || 'Giáo viên' }}
+                                    </small>
+                                    <button class="btn btn-primary btn-sm rounded-pill px-4" @click="goToTest(test.id)">
+                                        <i class="fas fa-play me-1"></i> Làm Bài
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Registration Section -->
         <section id="register-section" class="register-section py-5 bg-light">
             <div class="container">
@@ -407,5 +475,25 @@ onMounted(() => {
     .hero-image {
         margin-top: 3rem;
     }
+}
+
+/* Test Cards */
+.test-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-top: 3px solid transparent;
+}
+
+.test-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, .1) !important;
+    border-top-color: #fc74dd;
+}
+
+.bg-soft-success {
+    background-color: rgba(76, 175, 80, 0.1) !important;
+}
+
+.bg-soft-primary {
+    background-color: rgba(252, 116, 221, 0.1) !important;
 }
 </style>

@@ -11,11 +11,21 @@ export function getListByLesson(lessonId, params = {}) {
   return http.get(`/lessons/${lessonId}/bai-tests`, { params });
 }
 
+/** Lấy danh sách tất cả bài test (authenticated users) */
+export function getAllTests(params = {}) {
+  return http.get(`/bai-tests/all`, { params });
+}
+
 // ===== Student (auth:sanctum, role:hoc_sinh) =====
 
 /** Lấy chi tiết bài test (kèm câu hỏi + đáp án) */
 export function getDetail(id) {
   return http.get(`/bai-tests/${id}`);
+}
+
+/** Lấy chi tiết bài test cho giáo viên (edit mode - kèm đáp án đúng) */
+export function getDetailForTeacher(id) {
+  return http.get(`/bai-tests/${id}/edit`);
 }
 
 /** Bắt đầu làm bài test */
@@ -42,6 +52,11 @@ export function createTest(data) {
 
 /** Cập nhật bài test */
 export function updateTest(id, data) {
+  // FormData doesn't work with PUT in PHP/Laravel, use POST with _method override
+  if (data instanceof FormData) {
+    data.append('_method', 'PUT');
+    return http.post(`/bai-tests/${id}`, data);
+  }
   return http.put(`/bai-tests/${id}`, data);
 }
 

@@ -107,4 +107,22 @@ class BaiTest extends Model
     {
         return $this->cauHois()->count();
     }
+
+    protected static function booted()
+    {
+        static::deleting(function ($baiTest) {
+            // Delete related questions and answers
+            $baiTest->cauHois()->each(function ($cauHoi) {
+                $cauHoi->dapAns()->delete();
+                $cauHoi->delete();
+            });
+            // Delete analytics if configured
+            $baiTest->analytics()->delete();
+            // Delete student results and details
+            $baiTest->studentTestResults()->each(function ($result) {
+                \App\Models\StudentAnswerDetail::where('id_student_test_result', $result->id)->delete();
+                $result->delete();
+            });
+        });
+    }
 }

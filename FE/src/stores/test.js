@@ -75,12 +75,44 @@ export const useTestStore = defineStore("test", () => {
     }
   };
 
+  const fetchAllTests = async (params = {}) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const finalParams = { ...filters.value, ...params };
+      const response = await testApi.getAllTests(finalParams);
+      tests.value = response.data || [];
+      if (response.pagination) {
+        pagination.value = response.pagination;
+      }
+    } catch (err) {
+      error.value = err.response?.data?.message || "Failed to fetch tests";
+    } finally {
+      loading.value = false;
+    }
+  };
+
   // Actions - Test Details
   const fetchTestDetail = async (testId) => {
     loading.value = true;
     error.value = null;
     try {
       const response = await testApi.getDetail(testId);
+      currentTest.value = response.data;
+      return response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || "Failed to fetch test";
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchTestDetailForTeacher = async (testId) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await testApi.getDetailForTeacher(testId);
       currentTest.value = response.data;
       return response.data;
     } catch (err) {
@@ -337,9 +369,11 @@ export const useTestStore = defineStore("test", () => {
     // Actions - List
     fetchTestsByLesson,
     fetchMyTests,
+    fetchAllTests,
 
     // Actions - Details
     fetchTestDetail,
+    fetchTestDetailForTeacher,
 
     // Actions - Management
     createTest,

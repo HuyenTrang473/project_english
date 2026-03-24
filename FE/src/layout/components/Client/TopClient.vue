@@ -43,20 +43,13 @@
                             <span class="fw-semibold">Kiểm tra trình độ</span>
                         </a>
                         <ul class="dropdown-menu shadow-sm border-0">
-                            <li>
-                                <router-link class="dropdown-item" :to="testRoute">
-                                    📝 Test IELTS
+                            <li v-for="test in availableTests" :key="test.testId">
+                                <router-link class="dropdown-item" :to="`/test/${test.testId}`">
+                                    {{ test.testName }}
                                 </router-link>
                             </li>
-                            <li v-if="false">
-                                <router-link class="dropdown-item" to="/test/toeic">
-                                    📄 Test TOEIC
-                                </router-link>
-                            </li>
-                            <li v-if="false">
-                                <router-link class="dropdown-item" to="/test/level">
-                                    🎯 Test trình độ tổng quát
-                                </router-link>
+                            <li v-if="availableTests.length === 0">
+                                <span class="dropdown-item text-muted">Chưa có bài test</span>
                             </li>
                         </ul>
                     </li>
@@ -113,11 +106,10 @@ export default {
     setup() {
         const router = useRouter();
         const authStore = useAuthStore();
-        const featuredTestId = ref(null);
+        const availableTests = ref([]);
         const isLoggingOut = ref(false);
-        const testRoute = computed(() => (featuredTestId.value ? `/test/${featuredTestId.value}` : '/'));
 
-        const loadFeaturedTestId = async () => {
+        const loadAvailableTests = async () => {
             try {
                 const lessonRes = await getLessons();
                 const lessons = lessonRes.data || [];
@@ -125,12 +117,17 @@ export default {
                     const testRes = await getListByLesson(lesson.id);
                     const tests = testRes.data || [];
                     if (tests.length > 0) {
-                        featuredTestId.value = tests[0].id;
-                        return;
+                        for (const test of tests) {
+                            const testName = test.ten_bai_test || 'Bài test';
+                            availableTests.value.push({
+                                testId: test.id,
+                                testName: testName
+                            });
+                        }
                     }
                 }
             } catch (error) {
-                console.error('Failed to resolve featured test route', error);
+                console.error('Failed to load available tests', error);
             }
         };
 
@@ -152,12 +149,12 @@ export default {
         };
 
         onMounted(() => {
-            loadFeaturedTestId();
+            loadAvailableTests();
         });
 
         return {
             authStore,
-            testRoute,
+            availableTests,
             isLoggingOut,
             handleLogout,
         };

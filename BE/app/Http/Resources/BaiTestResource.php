@@ -14,6 +14,8 @@ class BaiTestResource extends JsonResource
             'id_giao_vien' => $this->id_giao_vien,
             'id_lesson' => $this->id_lesson,
             'ten_bai_test' => $this->ten_bai_test,
+            'loai_quiz' => $this->loai_quiz,
+            'chi_tiet_loai_quiz' => $this->chi_tiet_loai_quiz,
             'mo_ta' => $this->mo_ta,
             'thoi_gian_toi_da' => $this->thoi_gian_toi_da,
             'diem_tong_max' => $this->diem_tong_max,

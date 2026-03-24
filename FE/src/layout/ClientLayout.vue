@@ -12,8 +12,20 @@
                         <li class="nav-item">
                             <router-link class="nav-link" to="/">Trang chủ</router-link>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" @click.prevent="goToTestPage">Thi thử</a>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="testDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Bài Kiểm Tra
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="testDropdown">
+                                <li v-for="test in availableTests" :key="test.testId">
+                                    <router-link class="dropdown-item" :to="`/tests/${test.testId}/take`">
+                                        {{ test.testName }}
+                                    </router-link>
+                                </li>
+                                <li v-if="availableTests.length === 0">
+                                    <span class="dropdown-item text-muted">Chưa có bài test</span>
+                                </li>
+                            </ul>
                         </li>
                     </ul>
                     <div class="d-flex gap-2">
@@ -52,9 +64,8 @@ import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
 const authStore = useAuthStore();
-const featuredTestId = ref(null);
+const availableTests = ref([]);
 const isLoggingOut = ref(false);
-const testRoute = computed(() => (featuredTestId.value ? `/test/${featuredTestId.value}` : '/'));
 
 const handleLogout = async () => {
   isLoggingOut.value = true;
@@ -73,7 +84,7 @@ const handleLogout = async () => {
   }
 };
 
-const loadFeaturedTestId = async () => {
+const loadAvailableTests = async () => {
     try {
         const lessonRes = await getLessons();
         const lessons = lessonRes.data || [];
@@ -81,42 +92,25 @@ const loadFeaturedTestId = async () => {
             const testRes = await getListByLesson(lesson.id);
             const tests = testRes.data || [];
             if (tests.length > 0) {
-                featuredTestId.value = tests[0].id;
-                return;
+                for (const test of tests) {
+                    const testName = test.ten_bai_test || 'Bài test';
+                    availableTests.value.push({
+                        testId: test.id,
+                        testName: testName
+                    });
+                }
             }
         }
     } catch (error) {
-        console.error('Failed to resolve featured test route', error);
+        console.error('Failed to load available tests', error);
     }
 };
 
 onMounted(() => {
-    loadFeaturedTestId();
+    loadAvailableTests();
 });
 
-const goToTestPage = async () => {
-    if (!featuredTestId.value) {
-        await loadFeaturedTestId();
-    }
-
-    if (!authStore.isAuthenticated) {
-        router.push({ name: 'Login', query: { redirect: testRoute.value } });
-        return;
-    }
-
-    if (authStore.userRole !== 'hoc_sinh') {
-        alert('Chỉ tài khoản học sinh mới có thể vào trang thi thử.');
-        router.push('/');
-        return;
-    }
-
-    if (!featuredTestId.value) {
-        alert('Hiện chưa có đề thi đã publish để làm thử.');
-        return;
-    }
-
-    router.push(testRoute.value);
-};
+// Removed goToTestPage logic because links are now rendered directly via router-link
 </script>
 
 <style scoped>

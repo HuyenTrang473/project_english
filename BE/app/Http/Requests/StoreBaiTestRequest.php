@@ -19,6 +19,12 @@ class StoreBaiTestRequest extends FormRequest
 
     protected function prepareForValidation()
     {
+        if ($this->has('questions') && is_string($this->questions)) {
+            $this->merge([
+                'questions' => json_decode($this->questions, true)
+            ]);
+        }
+
         $this->merge([
             'id_lesson' => $this->lessonId ?? $this->id_lesson,
             'ten_bai_test' => $this->testName ?? $this->ten_bai_test,

@@ -4,7 +4,7 @@
     <div class="mb-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-          <h1 class="mb-0">{{ isEdit ? '✏️ Chỉnh Sửa Bài Test' : '➕ Tạo Bài Test Mới' }}</h1>
+          <h1 class="mb-0">{{ isView ? '👁️ Xem Chi Tiết Bài Test' : (isEdit ? '✏️ Chỉnh Sửa Bài Test' : '➕ Tạo Bài Test Mới') }}</h1>
           <small class="text-muted">Xây dựng và quản lý bài test trắc nghiệm cho học sinh</small>
         </div>
         <button @click="onBack" class="btn btn-outline-secondary">
@@ -31,6 +31,7 @@
             <h5 class="mb-0">⚙️ Cài Đặt Bài Test</h5>
           </div>
           <div class="card-body">
+            <fieldset :disabled="isView">
             <!-- Lesson Selection -->
             <div class="mb-3">
               <label class="form-label">Bài Học <span class="text-danger">*</span></label>
@@ -185,6 +186,7 @@
                 <option :value="2">📢 Công Bố</option>
               </select>
             </div>
+            </fieldset>
           </div>
         </div>
       </div>
@@ -231,7 +233,7 @@
       <div class="card-header bg-success text-white">
         <div class="d-flex justify-content-between align-items-center">
           <h5 class="mb-0">❓ Câu Hỏi ({{ questions.length }})</h5>
-          <button @click="openQuestionEditor()" class="btn btn-light btn-sm">
+          <button v-if="!isView" @click="openQuestionEditor()" class="btn btn-light btn-sm">
             <i class="fa fa-plus"></i> Thêm Câu Hỏi
           </button>
         </div>
@@ -255,7 +257,7 @@
                   <i class="fa fa-star"></i> {{ question.diem_toi_da || 0 }} điểm
                 </small>
               </div>
-              <div class="btn-group btn-group-sm ms-3">
+              <div v-if="!isView" class="btn-group btn-group-sm ms-3">
                 <button @click="openQuestionEditor(question)" class="btn btn-warning">
                   <i class="fa fa-edit"></i>
                 </button>
@@ -271,11 +273,11 @@
 
     <!-- Action Buttons -->
     <div class="d-flex gap-2 mb-4">
-      <button @click="onSubmit" :disabled="loading" class="btn btn-primary">
+      <button v-if="!isView" @click="onSubmit" :disabled="loading" class="btn btn-primary">
         <i class="fa fa-save"></i> {{ isEdit ? 'Cập Nhật Bài Test' : 'Tạo Bài Test' }}
       </button>
       <button @click="onBack" class="btn btn-outline-secondary">
-        <i class="fa fa-times"></i> Hủy
+        <i class="fa fa-times"></i> {{ isView ? 'Đóng' : 'Hủy' }}
       </button>
     </div>
 
@@ -327,7 +329,8 @@ const formErrors = ref({});
 
 // Computed
 const loading = computed(() => testStore.loading);
-const isEdit = computed(() => !!route.params.id);
+const isEdit = computed(() => !!route.params.id && !route.path.endsWith('/view'));
+const isView = computed(() => route.path.endsWith('/view'));
 const editTestId = computed(() => route.params.id);
 
 const progressPercent = computed(() => {
@@ -489,8 +492,12 @@ const onSubmit = async () => {
 };
 
 const onBack = () => {
-  if (confirm("Bạn có chắc chắn muốn quay lại? Các thay đổi sẽ không được lưu.")) {
+  if (isView.value) {
     router.back();
+  } else {
+    if (confirm("Bạn có chắc chắn muốn quay lại? Các thay đổi sẽ không được lưu.")) {
+      router.back();
+    }
   }
 };
 
@@ -498,10 +505,21 @@ const onBack = () => {
 const loadLessons = async () => {
   try {
     const http = await import("@/api/axiosClient").then(m => m.default);
-    const response = await http.get('/lessons');
-    // Response structure: { success: true, data: [...lessons] }
-    if (response && Array.isArray(response.data)) {
-      lessons.value = response.data;
+    // Use admin/lessons for full list (including drafts), fallback to public /lessons
+    let response;
+    try {
+      response = await http.get('/admin/lessons');
+    } catch {
+      response = await http.get('/lessons');
+    }
+    if (response && response.success && Array.isArray(response.data)) {
+      // Map fields: admin endpoint returns tieu_de directly, public uses LessonResource with 'title'
+      lessons.value = response.data.map(l => ({
+        id: l.id,
+        tieu_de: l.tieu_de || l.title || '',
+        mo_ta: l.mo_ta || l.description || '',
+        loai_bai_hoc: l.loai_bai_hoc || '',
+      }));
     } else {
       lessons.value = [];
     }
@@ -544,10 +562,10 @@ const loadTest = async () => {
     }
   }
 
-  // Load test if editing
-  if (isEdit.value) {
+  // Load test if editing or viewing
+  if (isEdit.value || isView.value) {
     try {
-      const test = await testStore.fetchTestDetail(editTestId.value);
+      const test = await testStore.fetchTestDetailForTeacher(editTestId.value);
 
       // Normalize boolean values from database (may be 0/1 or true/false)
       form.value = {

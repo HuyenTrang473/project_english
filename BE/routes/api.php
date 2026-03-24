@@ -38,14 +38,24 @@ Route::middleware(['auth:sanctum', 'role:giao_vien,admin'])->group(function () {
     Route::get('/teacher/lessons', [LessonController::class, 'myLessons']);
 });
 
+// ============ BaiTest Routes (Protected - All authenticated users) ============
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/bai-tests/all', [BaiTestController::class, 'getAllTests']);
+});
+
 // ============ BaiTest Routes (Public) ============
 Route::get('/lessons/{lessonId}/bai-tests', [BaiTestController::class, 'indexByLesson']);
 // Moved show method to student protected block
 
+// ============ BaiTest Routes (Protected - All authenticated users) ============
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/bai-tests/{id}', [BaiTestController::class, 'show']); // View test details - for all authenticated users
+});
+
 // ============ BaiTest Routes (Teacher - Protected) ============
 Route::middleware(['auth:sanctum', 'role:giao_vien,admin'])->group(function () {
     Route::post('/bai-tests', [BaiTestController::class, 'store']);
-    Route::get('/bai-tests/{id}', [BaiTestController::class, 'showForTeacher']); // Add this line - for teachers to edit
+    Route::get('/bai-tests/{id}/edit', [BaiTestController::class, 'showForTeacher']); // For teachers to edit
     Route::put('/bai-tests/{id}', [BaiTestController::class, 'update']);
     Route::delete('/bai-tests/{id}', [BaiTestController::class, 'destroy']);
     Route::get('/teacher/bai-tests', [BaiTestController::class, 'myTests']);
@@ -63,9 +73,8 @@ Route::middleware(['auth:sanctum', 'role:giao_vien,admin'])->group(function () {
     Route::delete('/bai-tests/{testId}/cau-hois/{questionId}/dap-ans/{answerId}', [DapAnController::class, 'destroy']);
 });
 
-// ============ BaiTest Routes (Student - Protected) ============
-Route::middleware(['auth:sanctum', 'role:hoc_sinh,admin'])->group(function () {
-    Route::get('/bai-tests/{id}', [BaiTestController::class, 'show']); // Allow viewing test details
+// ============ BaiTest Routes (All authenticated users can take tests) ============
+Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/bai-tests/{testId}/start', [BaiTestController::class, 'startTest']);
     Route::post('/bai-tests/{testId}/submit', [BaiTestController::class, 'submitTest']);
     Route::get('/bai-tests/{testId}/result', [BaiTestController::class, 'getResult']);
@@ -76,6 +85,7 @@ Route::middleware(['auth:sanctum', 'role:giao_vien,admin'])->group(function () {
     Route::get('/admin/stats', [AdminController::class, 'getStats']);
 
     // Admin Test Management Routes
+    Route::get('/admin/lessons', [AdminController::class, 'getAllLessons']);
     Route::get('/admin/tests', [AdminController::class, 'getAllTests']);
     Route::get('/admin/tests/{id}', [AdminController::class, 'getTestDetail']);
     Route::post('/admin/tests', [AdminController::class, 'createTest']);

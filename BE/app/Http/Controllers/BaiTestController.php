@@ -67,6 +67,60 @@ class BaiTestController extends Controller
         }
     }
 
+    // Danh sách tất cả bài test có thể xem (authenticated users)
+    public function getAllTests(Request $request)
+    {
+        try {
+            $user = auth('sanctum')->user();
+
+            // Nếu là giáo viên hoặc admin, xem bài test của họ (bất kỳ trạng thái nào)
+            // Nếu là học sinh, chỉ xem bài test đã công bố
+            if ($user->role === 'giao_vien' || $user->role === 'admin') {
+                $query = BaiTest::where('id_giao_vien', $user->id)
+                    ->with('lesson:id,tieu_de');
+            } else {
+                // Học sinh chỉ xem bài test đã công bố
+                $query = BaiTest::published()
+                    ->with('giaoVien:id,name');
+            }
+
+            // Filter by name/search
+            if ($request->has('search') && $request->search) {
+                $query->where('ten_bai_test', 'like', '%' . $request->search . '%');
+            }
+
+            // Filter by status
+            if ($request->has('status') && $request->status) {
+                $query->where('trang_thai', $request->status);
+            }
+
+            // Sorting
+            $sortBy = $request->get('sort_by', 'created_at');
+            $sortOrder = $request->get('sort_order', 'desc');
+            $query->orderBy($sortBy, $sortOrder);
+
+            // Pagination
+            $perPage = $request->get('per_page', 15);
+            $tests = $query->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => BaiTestResource::collection($tests->items()),
+                'pagination' => [
+                    'total' => $tests->total(),
+                    'per_page' => $tests->perPage(),
+                    'current_page' => $tests->currentPage(),
+                    'last_page' => $tests->lastPage(),
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi lấy danh sách bài test: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     // Danh sách bài test của giáo viên (giáo viên - với pagination & filter)
     public function myTests(Request $request)
     {
@@ -111,12 +165,11 @@ class BaiTestController extends Controller
         }
     }
 
-    // Lấy chi tiết bài test (học sinh - với shuffle nếu cần)
+    // Lấy chi tiết bài test (tất cả users đã auth - với shuffle nếu cần)
     public function show($id, Request $request)
     {
         try {
-            $test = BaiTest::published()
-                ->with('giaoVien:id,name')
+            $test = BaiTest::with('giaoVien:id,name')
                 ->find($id);
 
             if (!$test) {
@@ -126,8 +179,23 @@ class BaiTestController extends Controller
                 ], 404);
             }
 
-            // Kiểm tra thời gian availability
-            if (!$this->isTestAvailable($test)) {
+            // Check access control:
+            // - If published: everyone can view
+            // - If draft: only owner (giáo viên) or admin can view
+            $user = auth('sanctum')->user();
+            $isOwner = $test->id_giao_vien === auth('sanctum')->id();
+            $isAdmin = $user && $user->isAdmin();
+            $isPublished = $test->trang_thai === 2;
+
+            if (!$isPublished && !$isOwner && !$isAdmin) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền xem bài test này',
+                ], 403);
+            }
+
+            // Kiểm tra thời gian availability (chỉ cho non-owner)
+            if (!$isOwner && !$this->isTestAvailable($test)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bài test này không còn khả dụng',
@@ -552,16 +620,20 @@ class BaiTestController extends Controller
                 ], 403);
             }
 
-            // Kiểm tra học sinh đã enroll khóa học chứa bài test
-            $enrolled = CourseEnrollment::where('id_hoc_sinh', $userId)
-                ->where('id_lesson', $test->id_lesson)
-                ->exists();
+            // Kiểm tra học sinh đã enroll khóa học chứa bài test (bỏ qua cho giáo viên/admin)
+            $user = auth('sanctum')->user();
+            if ($user->isStudent()) {
+                $enrolled = CourseEnrollment::where('id_hoc_sinh', $userId)
+                    ->where('id_lesson', $test->id_lesson)
+                    ->exists();
 
-            if (!$enrolled) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Bạn chưa đăng ký khóa học chứa bài test này',
-                ], 403);
+                if (!$enrolled) {
+                    // Auto-enroll student for convenience
+                    CourseEnrollment::create([
+                        'id_hoc_sinh' => $userId,
+                        'id_lesson' => $test->id_lesson,
+                    ]);
+                }
             }
 
             // Kiểm tra số lần làm đã vượt quá giới hạn
