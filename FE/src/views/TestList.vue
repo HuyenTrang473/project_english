@@ -176,10 +176,7 @@
                 <i class="fa fa-trash"></i>
               </button>
 
-              <router-link v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)"
-                :to="`/tests/${test.id}/analytics`" class="btn btn-sm btn-success" title="Thống kê">
-                <i class="fa fa-chart-bar"></i>
-              </router-link>
+
             </div>
           </div>
         </div>
@@ -239,10 +236,7 @@
                   <i class="fa fa-trash"></i>
                 </button>
 
-                <router-link v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)"
-                  :to="`/tests/${test.id}/analytics`" class="btn btn-success" title="Thống kê">
-                  <i class="fa fa-chart-bar"></i>
-                </router-link>
+
               </div>
             </td>
           </tr>
@@ -330,7 +324,7 @@ const truncate = (text, length) => {
 };
 
 const isOwner = (teacherId) => {
-  return authStore.user?.id === teacherId;
+  return authStore.user?.role === 'admin' || authStore.user?.id === teacherId;
 };
 
 const onSearchChange = () => {

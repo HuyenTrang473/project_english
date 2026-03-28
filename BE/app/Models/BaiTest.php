@@ -20,6 +20,7 @@ class BaiTest extends Model
         'mo_ta',
         'thoi_gian_toi_da',
         'diem_tong_max',
+        'diem_dat',
         'trang_thai',
         'so_lan_lam_toi_da',
         'co_xao_tron_cau_hoi',
@@ -34,6 +35,7 @@ class BaiTest extends Model
     protected $casts = [
         'thoi_gian_toi_da' => 'integer',
         'diem_tong_max' => 'float',
+        'diem_dat' => 'float',
         'so_lan_lam_toi_da' => 'integer',
         'co_xao_tron_cau_hoi' => 'boolean',
         'co_xao_tron_dap_an' => 'boolean',

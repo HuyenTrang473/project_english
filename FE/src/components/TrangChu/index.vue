@@ -13,12 +13,19 @@ const loading = ref(true);
 const featuredTestId = ref(null);
 
 const resolveFeaturedTestId = async (lessons) => {
+    if (!lessons || lessons.length === 0) {
+        return;
+    }
     for (const lesson of lessons) {
-        const testRes = await getListByLesson(lesson.id);
-        const tests = testRes.data || [];
-        if (tests.length > 0) {
-            featuredTestId.value = tests[0].id;
-            return;
+        try {
+            const testRes = await getListByLesson(lesson.id);
+            const tests = testRes.data || [];
+            if (tests.length > 0) {
+                featuredTestId.value = tests[0].id;
+                return;
+            }
+        } catch (error) {
+            console.error(`Failed to get tests for lesson ${lesson.id}:`, error);
         }
     }
 };
@@ -28,7 +35,9 @@ const fetchCourses = async () => {
     try {
         const res = await getLessons();
         courses.value = res.data || [];
+        console.log('Courses loaded:', courses.value);
         await resolveFeaturedTestId(courses.value);
+        console.log('Featured test ID:', featuredTestId.value);
         await loadPublishedTests();
     } catch (error) {
         console.error("Failed to load courses", error);
@@ -41,6 +50,7 @@ const loadPublishedTests = async () => {
     try {
         const res = await getAllTests({ status: 2, per_page: 6, sort_by: 'created_at', sort_order: 'desc' });
         publishedTests.value = res.data || [];
+        console.log('Published tests loaded:', publishedTests.value);
     } catch (error) {
         console.error('Failed to load tests', error);
     }
@@ -48,21 +58,15 @@ const loadPublishedTests = async () => {
 
 const goToTest = (testId) => {
     if (!authStore.isAuthenticated) {
-        router.push({ name: 'Login', query: { redirect: `/tests/${testId}/take` } });
+        router.push({ name: 'Login', query: { redirect: `/test/${testId}` } });
         return;
     }
-    router.push(`/tests/${testId}/take`);
+    router.push(`/test/${testId}`);
 };
 
 const goToFreeTest = () => {
     if (!authStore.isAuthenticated) {
         router.push({ name: 'Login', query: { redirect: featuredTestId.value ? `/test/${featuredTestId.value}` : '/test' } });
-        return;
-    }
-
-    if (authStore.userRole !== 'hoc_sinh') {
-        alert('Chỉ tài khoản học sinh mới có thể vào trang thi thử.');
-        router.push('/');
         return;
     }
 
@@ -83,6 +87,10 @@ const navigateToRegister = () => {
     router.push('/register');
 };
 
+const handleImageError = (event) => {
+    event.target.src = 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=500';
+};
+
 onMounted(() => {
     fetchCourses();
 });
@@ -100,7 +108,7 @@ onMounted(() => {
                             <span class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill mb-3 fw-semibold">
                                 <i class="fas fa-star me-2"></i>#1 English Learning Platform
                             </span>
-                            <h1 class="hero-title display-3 fw-bold mb-4 text-dark">
+                            <h1 class="hero-title display-3 fw-bold mb-4 text-dark lh-sm">
                                 Master English with <span class="highlight text-gradient">Confidence</span>
                             </h1>
                             <p class="hero-subtitle lead text-secondary mb-5">
@@ -109,11 +117,13 @@ onMounted(() => {
                                 Start your journey to fluency today.
                             </p>
                             <div class="hero-actions d-flex flex-wrap gap-3">
-                                <button class="btn btn-primary btn-lg rounded-pill px-5 py-3 shadow-lg hover-lift"
+                                <button
+                                    class="btn btn-primary btn-lg rounded-pill px-5 py-3 shadow-sm hover-lift fw-semibold"
                                     @click="scrollToRegister">
                                     Start Learning Now
                                 </button>
-                                <button class="btn btn-outline-dark btn-lg rounded-pill px-5 py-3 hover-lift"
+                                <button
+                                    class="btn btn-outline-dark btn-lg rounded-pill px-5 py-3 hover-lift fw-semibold"
                                     @click="goToFreeTest">
                                     Take Free Test
                                 </button>
@@ -129,28 +139,30 @@ onMounted(() => {
                                 class="img-fluid rounded-5 shadow-xxl position-relative z-1 hover-scale">
 
                             <!-- Floating Cards -->
-                            <div
-                                class="floating-card c1 bg-white p-3 rounded-4 shadow-lg position-absolute top-0 start-0 mt-4 ms-n4 z-2 border border-light">
+                            <div class="floating-card c1 bg-white p-3 rounded-4 shadow-sm position-absolute top-0 start-0 mt-4 ms-n4 z-2 border border-light"
+                                style="backdrop-filter: blur(10px); background: rgba(255,255,255,0.9);">
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="icon-square bg-primary text-white p-2 rounded-3">
                                         <i class="fas fa-graduation-cap fa-lg"></i>
                                     </div>
                                     <div>
-                                        <p class="mb-0 small text-muted">Target</p>
-                                        <p class="mb-0 fw-bold text-dark">IELTS 8.0+</p>
+                                        <p class="mb-0 small text-muted text-uppercase fw-semibold"
+                                            style="letter-spacing: 0.5px;">Target</p>
+                                        <p class="mb-0 fw-bold text-dark fs-5">IELTS 8.0+</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div
-                                class="floating-card c2 bg-white p-3 rounded-4 shadow-lg position-absolute bottom-0 end-0 mb-4 me-n4 z-2 border border-light">
+                            <div class="floating-card c2 bg-white p-3 rounded-4 shadow-sm position-absolute bottom-0 end-0 mb-4 me-n4 z-2 border border-light"
+                                style="backdrop-filter: blur(10px); background: rgba(255,255,255,0.9);">
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="icon-square bg-success text-white p-2 rounded-3">
                                         <i class="fas fa-fire fa-lg"></i>
                                     </div>
                                     <div>
-                                        <p class="mb-0 small text-muted">Result</p>
-                                        <p class="mb-0 fw-bold text-dark">Fast Track</p>
+                                        <p class="mb-0 small text-muted text-uppercase fw-semibold"
+                                            style="letter-spacing: 0.5px;">Result</p>
+                                        <p class="mb-0 fw-bold text-dark fs-5">Fast Track</p>
                                     </div>
                                 </div>
                             </div>
@@ -159,23 +171,23 @@ onMounted(() => {
                 </div>
 
                 <!-- Stats Row -->
-                <div class="row mt-5 pt-5 border-top border-light">
+                <div class="row mt-5 pt-5 border-top border-light opacity-75">
                     <div class="col-6 col-md-4">
                         <div class="d-flex align-items-center gap-3">
                             <h3 class="fw-bolder mb-0 display-6 text-primary">10k+</h3>
-                            <p class="mb-0 text-muted small lh-sm">Active<br>Students</p>
+                            <p class="mb-0 text-muted small lh-sm fw-medium">Active<br>Students</p>
                         </div>
                     </div>
                     <div class="col-6 col-md-4">
                         <div class="d-flex align-items-center gap-3">
                             <h3 class="fw-bolder mb-0 display-6 text-primary">98%</h3>
-                            <p class="mb-0 text-muted small lh-sm">Success<br>Rate</p>
+                            <p class="mb-0 text-muted small lh-sm fw-medium">Success<br>Rate</p>
                         </div>
                     </div>
                     <div class="col-6 col-md-4 mt-4 mt-md-0">
                         <div class="d-flex align-items-center gap-3">
                             <h3 class="fw-bolder mb-0 display-6 text-primary">50+</h3>
-                            <p class="mb-0 text-muted small lh-sm">Expert<br>Tutors</p>
+                            <p class="mb-0 text-muted small lh-sm fw-medium">Expert<br>Tutors</p>
                         </div>
                     </div>
                 </div>
@@ -183,39 +195,45 @@ onMounted(() => {
         </section>
 
         <!-- Features Section -->
-        <section class="features-section py-5 position-relative" style="z-index: 2;">
-            <div class="container">
+        <section class="features-section py-5 position-relative bg-light" style="z-index: 2;">
+            <div class="container py-4">
+                <div class="text-center mb-5">
+                    <span class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill mb-2 fw-semibold">Outstanding
+                        Features</span>
+                    <h2 class="h2 fw-bold text-dark mb-0">Comprehensive Learning Ecosystem</h2>
+                </div>
                 <div class="row g-4 justify-content-center">
                     <div class="col-md-4">
-                        <div class="feature-card bg-white p-4 rounded-4 shadow-sm h-100 transition-hover">
-                            <div class="icon-box i-blue mb-3 rounded-3 d-flex align-items-center justify-content-center"
-                                style="width: 50px; height: 50px; background: #e3f2fd; color: #2196f3; font-size: 1.25rem;">
+                        <div class="feature-card bg-white p-4 rounded-4 shadow-sm h-100 transition-hover border-0">
+                            <div class="icon-box i-blue mb-4 rounded-3 d-flex align-items-center justify-content-center"
+                                style="width: 56px; height: 56px; background: #e3f2fd; color: #2196f3; font-size: 1.5rem;">
                                 <i class="fa-solid fa-earth-americas"></i>
                             </div>
-                            <h3 class="h5 fw-bold">IELTS Prep</h3>
-                            <p class="text-muted small">Comprehensive verified curriculum for reading, writing,
-                                listening, and speaking.</p>
+                            <h3 class="h5 fw-bold mb-3 text-dark">IELTS Prep</h3>
+                            <p class="text-muted small mb-0 lh-lg">Comprehensive verified curriculum for reading,
+                                writing, listening, and speaking.</p>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="feature-card bg-white p-4 rounded-4 shadow-sm h-100 transition-hover">
-                            <div class="icon-box i-pink mb-3 rounded-3 d-flex align-items-center justify-content-center"
-                                style="width: 50px; height: 50px; background: #fff0fa; color: #fc74dd; font-size: 1.25rem;">
+                        <div class="feature-card bg-white p-4 rounded-4 shadow-sm h-100 transition-hover border-0">
+                            <div class="icon-box i-pink mb-4 rounded-3 d-flex align-items-center justify-content-center"
+                                style="width: 56px; height: 56px; background: #fff0fa; color: #fc74dd; font-size: 1.5rem;">
                                 <i class="fa-solid fa-comments"></i>
                             </div>
-                            <h3 class="h5 fw-bold">Communication</h3>
-                            <p class="text-muted small">Practice real-world conversations with native speakers and
-                                expert tutors.</p>
+                            <h3 class="h5 fw-bold mb-3 text-dark">Communication</h3>
+                            <p class="text-muted small mb-0 lh-lg">Practice real-world conversations with native
+                                speakers and expert tutors.</p>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="feature-card bg-white p-4 rounded-4 shadow-sm h-100 transition-hover">
-                            <div class="icon-box i-green mb-3 rounded-3 d-flex align-items-center justify-content-center"
-                                style="width: 50px; height: 50px; background: #e8f5e9; color: #4caf50; font-size: 1.25rem;">
+                        <div class="feature-card bg-white p-4 rounded-4 shadow-sm h-100 transition-hover border-0">
+                            <div class="icon-box i-green mb-4 rounded-3 d-flex align-items-center justify-content-center"
+                                style="width: 56px; height: 56px; background: #e8f5e9; color: #4caf50; font-size: 1.5rem;">
                                 <i class="fa-solid fa-certificate"></i>
                             </div>
-                            <h3 class="h5 fw-bold">Certification</h3>
-                            <p class="text-muted small">Get recognized certificates upon completion of each level.</p>
+                            <h3 class="h5 fw-bold mb-3 text-dark">Certification</h3>
+                            <p class="text-muted small mb-0 lh-lg">Get recognized certificates upon completion of each
+                                level.</p>
                         </div>
                     </div>
                 </div>
@@ -223,64 +241,94 @@ onMounted(() => {
         </section>
 
         <!-- About Section -->
-        <section class="about-section py-5">
+        <section class="about-section py-5 my-md-5">
             <div class="container">
-                <div class="row align-items-center">
-                    <div class="col-lg-6 mb-4 mb-lg-0">
-                        <h2 class="display-6 fw-bold mb-3">Why Choose Us?</h2>
-                        <p class="lead text-muted mb-4">We combine technology with expert pedagogy to deliver the most
+                <div class="row align-items-center gx-lg-5">
+                    <div class="col-lg-6 mb-5 mb-lg-0">
+                        <span class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill mb-3 fw-semibold">About
+                            Us</span>
+                        <h2 class="display-6 fw-bold mb-4 lh-base text-dark">Why Choose Us?</h2>
+                        <p class="lead text-muted mb-5">We combine technology with expert pedagogy to deliver the most
                             effective learning experience.</p>
                         <ul class="list-unstyled">
-                            <li class="mb-3 d-flex align-items-center gap-2"><i
-                                    class="fa-solid fa-check text-primary bg-light p-1 rounded-circle small"></i>
-                                Personalized Learning Path</li>
-                            <li class="mb-3 d-flex align-items-center gap-2"><i
-                                    class="fa-solid fa-check text-primary bg-light p-1 rounded-circle small"></i> 24/7
-                                Access to Materials</li>
-                            <li class="mb-3 d-flex align-items-center gap-2"><i
-                                    class="fa-solid fa-check text-primary bg-light p-1 rounded-circle small"></i> Live
-                                Interactive Sessions</li>
+                            <li class="mb-4 d-flex align-items-center gap-3">
+                                <div class="icon-circle bg-soft-primary text-primary d-flex align-items-center justify-content-center rounded-circle"
+                                    style="width: 40px; height: 40px;">
+                                    <i class="fa-solid fa-check"></i>
+                                </div>
+                                <span class="fw-medium text-dark">Personalized Learning Path</span>
+                            </li>
+                            <li class="mb-4 d-flex align-items-center gap-3">
+                                <div class="icon-circle bg-soft-primary text-primary d-flex align-items-center justify-content-center rounded-circle"
+                                    style="width: 40px; height: 40px;">
+                                    <i class="fa-solid fa-book-open"></i>
+                                </div>
+                                <span class="fw-medium text-dark">24/7 Access to Materials</span>
+                            </li>
+                            <li class="mb-0 d-flex align-items-center gap-3">
+                                <div class="icon-circle bg-soft-primary text-primary d-flex align-items-center justify-content-center rounded-circle"
+                                    style="width: 40px; height: 40px;">
+                                    <i class="fa-solid fa-video"></i>
+                                </div>
+                                <span class="fw-medium text-dark">Live Interactive Sessions</span>
+                            </li>
                         </ul>
                     </div>
-                    <div class="col-lg-6">
+                    <div class="col-lg-6 position-relative">
+                        <div class="position-absolute w-100 h-100 bg-soft-primary rounded-4"
+                            style="top: 20px; left: -20px; z-index: -1;"></div>
                         <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644" alt="Team"
-                            class="img-fluid rounded-4 shadow">
+                            class="img-fluid rounded-4 shadow-sm object-fit-cover" style="height: 500px; width: 100%;">
                     </div>
                 </div>
             </div>
         </section>
 
         <!-- Courses Section -->
-        <section class="courses-section py-5 bg-white">
-            <div class="container">
-                <div class="d-flex justify-content-between align-items-center mb-5">
-                    <h2 class="h2 fw-bold mb-0">Our Popular Courses</h2>
-                    <a href="#" class="btn btn-link text-decoration-none">View All Courses <i
-                            class="fa-solid fa-arrow-right list-inline-item"></i></a>
+        <section class="courses-section py-5 bg-light my-5">
+            <div class="container py-lg-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-5">
+                    <div class="mb-3 mb-md-0">
+                        <span class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill mb-2 fw-semibold">Optimal
+                            Path</span>
+                        <h2 class="h2 fw-bold mb-0 text-dark">Our Popular Courses</h2>
+                    </div>
+                    <router-link to="/lessons" class="btn btn-outline-primary rounded-pill px-4 fw-medium">
+                        View All Courses <i class="fa-solid fa-arrow-right list-inline-item ms-1"></i>
+                    </router-link>
                 </div>
 
                 <div v-if="loading" class="text-center py-5 text-muted">Loading courses...</div>
 
                 <div v-else class="row g-4">
                     <div v-for="(course, index) in courses" :key="index" class="col-md-6 col-lg-4">
-                        <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden course-card">
+                        <div
+                            class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden course-card transition-hover">
                             <div class="position-relative">
-                                <img :src="course.hinh_anh" class="card-img-top object-fit-cover" alt="Course Image"
-                                    style="height: 200px;">
-                                <span class="position-absolute top-0 end-0 m-3 badge bg-primary rounded-pill">Hot</span>
+                                <img :src="course.hinh_anh || 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=500'"
+                                    class="card-img-top object-fit-cover" alt="Course Image" style="height: 220px;"
+                                    @error="handleImageError">
+                                <span
+                                    class="position-absolute top-0 end-0 m-3 badge bg-primary bg-gradient rounded-pill px-3 py-2 shadow-sm fw-medium">Hot</span>
                             </div>
-                            <div class="card-body p-4">
-                                <h3 class="card-title h5 fw-bold">{{ course.title }}</h3>
-                                <p class="card-text text-muted small">{{ course.description }}</p>
-                                <span class="badge text-primary bg-light mb-3">Teacher: {{ course.teacher?.name
-                                    }}</span>
-                                <button class="btn btn-outline-primary w-100 rounded-3 mt-auto"
+                            <div class="card-body p-4 d-flex flex-column">
+                                <h3 class="card-title h5 fw-bold text-dark mb-3">{{ course.title }}</h3>
+                                <p class="card-text text-muted small mb-4 flex-grow-1 lh-lg">{{ course.description }}
+                                </p>
+                                <div class="d-flex align-items-center mb-4">
+                                    <div class="bg-soft-primary px-2 py-1 rounded-2 me-2">
+                                        <i class="fa-solid fa-user-tie text-primary small"></i>
+                                    </div>
+                                    <span class="text-dark fw-medium small">Teacher: {{ course.teacher?.name ||
+                                        'Pending' }}</span>
+                                </div>
+                                <button class="btn btn-primary w-100 rounded-pill fw-semibold shadow-sm py-2"
                                     @click="navigateToRegister">Register Now</button>
                             </div>
                         </div>
                     </div>
                     <!-- Mock Data if empty -->
-                    <div v-if="courses.length === 0" class="col-12 text-center text-muted">
+                    <div v-if="courses.length === 0" class="col-12 text-center text-muted py-5">
                         <p>No courses available right now. Check back later!</p>
                     </div>
                 </div>
@@ -288,45 +336,58 @@ onMounted(() => {
         </section>
 
         <!-- Tests Section -->
-        <section class="tests-section py-5">
+        <section class="tests-section py-5 mb-5">
             <div class="container">
-                <div class="d-flex justify-content-between align-items-center mb-5">
-                    <div>
-                        <h2 class="h2 fw-bold mb-1">📝 Bài Kiểm Tra</h2>
-                        <p class="text-muted mb-0">Làm bài kiểm tra và nhận kết quả chấm điểm ngay lập tức</p>
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-5">
+                    <div class="mb-3 mb-md-0">
+                        <span class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill mb-2 fw-semibold">Skill
+                            Assessment</span>
+                        <h2 class="h2 fw-bold mb-2 text-dark">Take a Quick Test</h2>
+                        <p class="text-muted mb-0 fs-6">Evaluate your skills instantly with our intelligent grading
+                            system</p>
                     </div>
-                    <router-link to="/tests" class="btn btn-link text-decoration-none">
-                        Xem tất cả <i class="fa-solid fa-arrow-right list-inline-item"></i>
+                    <router-link to="/tests" class="btn btn-outline-primary rounded-pill px-4 fw-medium">
+                        All Tests <i class="fa-solid fa-arrow-right list-inline-item ms-1"></i>
                     </router-link>
                 </div>
 
-                <div v-if="publishedTests.length === 0" class="text-center text-muted py-4">
-                    <p>Hiện chưa có bài kiểm tra nào.</p>
+                <div v-if="publishedTests.length === 0" class="text-center py-5">
+                    <div class="bg-light p-5 rounded-4 border border-dashed">
+                        <p class="text-muted fs-5 mb-0">Currently no tests are published.</p>
+                    </div>
                 </div>
 
                 <div v-else class="row g-4">
                     <div v-for="test in publishedTests" :key="test.id" class="col-md-6 col-lg-4">
-                        <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden test-card">
+                        <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden test-card bg-white">
                             <div class="card-body p-4 d-flex flex-column">
-                                <div class="d-flex align-items-center gap-2 mb-3">
-                                    <span class="badge bg-soft-success text-success rounded-pill px-3 py-1">
-                                        <i class="fas fa-clock me-1"></i>{{ test.thoi_gian_toi_da }} phút
+                                <div class="d-flex align-items-center gap-2 mb-4">
+                                    <span
+                                        class="badge bg-soft-success text-success rounded-pill px-3 py-2 fw-medium border border-success border-opacity-25">
+                                        <i class="fas fa-clock me-1"></i>{{ test.thoi_gian_toi_da }} mins
                                     </span>
-                                    <span class="badge bg-soft-primary text-primary rounded-pill px-3 py-1">
-                                        <i class="fas fa-star me-1"></i>{{ test.diem_tong_max }} điểm
+                                    <span
+                                        class="badge bg-soft-primary text-primary rounded-pill px-3 py-2 fw-medium border border-primary border-opacity-25">
+                                        <i class="fas fa-star me-1"></i>Max {{ test.diem_tong_max }} pts
                                     </span>
                                 </div>
-                                <h5 class="card-title fw-bold mb-2">{{ test.ten_bai_test }}</h5>
-                                <p class="card-text text-muted small flex-grow-1">
-                                    {{ test.mo_ta || 'Bài kiểm tra trắc nghiệm tiếng Anh' }}
+                                <h5 class="card-title fw-bold mb-3 text-dark">{{ test.ten_bai_test }}</h5>
+                                <p class="card-text text-muted small mb-4 flex-grow-1 lh-lg">
+                                    {{ test.mo_ta || 'General English assessment to help build your perfect learning' }}
                                 </p>
-                                <div class="d-flex align-items-center justify-content-between mt-3">
-                                    <small class="text-muted">
-                                        <i class="fas fa-user me-1"></i>
-                                        {{ test.giao_vien?.name || 'Giáo viên' }}
-                                    </small>
-                                    <button class="btn btn-primary btn-sm rounded-pill px-4" @click="goToTest(test.id)">
-                                        <i class="fas fa-play me-1"></i> Làm Bài
+                                <div
+                                    class="d-flex align-items-center justify-content-between mt-auto pt-3 border-top border-light">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center"
+                                            style="width: 32px; height: 32px;">
+                                            <i class="fas fa-user text-secondary small"></i>
+                                        </div>
+                                        <span class="text-dark fw-medium small">{{ test.giao_vien?.name || 'Tutor'
+                                            }}</span>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm rounded-pill px-4 py-2 fw-semibold shadow-sm"
+                                        @click="goToTest(test.id)">
+                                        <i class="fas fa-play me-2"></i> Take Test
                                     </button>
                                 </div>
                             </div>
@@ -337,40 +398,50 @@ onMounted(() => {
         </section>
 
         <!-- Registration Section -->
-        <section id="register-section" class="register-section py-5 bg-light">
-            <div class="container">
-                <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+        <section id="register-section" class="register-section py-5 bg-white">
+            <div class="container py-lg-4">
+                <div class="card border-0 shadow-lg rounded-5 overflow-hidden">
                     <div class="row g-0">
-                        <div class="col-lg-6 p-5">
-                            <h2 class="fw-bold mb-3">Start Your Journey</h2>
-                            <p class="text-muted mb-4">Get a free consultation and roadmap within 24 hours.</p>
+                        <div class="col-lg-6 p-5 p-xl-5 d-flex flex-column justify-content-center bg-white">
+                            <span
+                                class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill mb-3 fw-semibold align-self-start">Free
+                                Consultation</span>
+                            <h2 class="display-6 fw-bold mb-3 text-dark">Start Your Journey</h2>
+                            <p class="text-muted mb-5 fs-5">Leave your details and get a personalized roadmap completely
+                                free within 24 hours.</p>
 
                             <form @submit.prevent="navigateToRegister">
-                                <div class="mb-3">
+                                <div class="mb-4">
                                     <input type="text" placeholder="Full Name"
-                                        class="form-control form-control-lg bg-light border-0">
-                                </div>
-                                <div class="mb-3">
-                                    <input type="text" placeholder="Phone Number"
-                                        class="form-control form-control-lg bg-light border-0">
+                                        class="form-control form-control-lg bg-light border-0 px-4 rounded-3 shadow-none">
                                 </div>
                                 <div class="mb-4">
-                                    <select class="form-select form-select-lg bg-light border-0 text-muted">
+                                    <input type="text" placeholder="Phone Number"
+                                        class="form-control form-control-lg bg-light border-0 px-4 rounded-3 shadow-none">
+                                </div>
+                                <div class="mb-5">
+                                    <select
+                                        class="form-select form-select-lg bg-light border-0 px-4 rounded-3 text-muted shadow-none cursor-pointer">
                                         <option selected disabled>Select Course</option>
                                         <option>IELTS Preparation</option>
                                         <option>Business English</option>
                                         <option>Communication</option>
                                     </select>
                                 </div>
-                                <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill">Sign Up
-                                    Now</button>
+                                <button type="submit"
+                                    class="btn btn-primary btn-lg w-100 rounded-pill py-3 fw-bold shadow-sm hover-scale">
+                                    Sign Up Now
+                                </button>
                             </form>
                         </div>
                         <div class="col-lg-6 d-none d-lg-block position-relative">
                             <img src="https://images.unsplash.com/photo-1513258496099-48168024aec0" alt="Register"
                                 class="img-fluid w-100 h-100 object-fit-cover">
-                            <div class="position-absolute top-0 start-0 w-100 h-100"
-                                style="background: linear-gradient(to right, rgba(252, 116, 221, 0.2), transparent);">
+                            <div class="position-absolute top-0 start-0 w-100 h-100 overlay-gradient"></div>
+                            <div class="position-absolute bottom-0 start-0 p-5 text-white z-2">
+                                <h3 class="fw-bold fs-3 mb-3 text-white lh-base">"Education is the most powerful weapon
+                                    which you can use to change the world."</h3>
+                                <p class="fs-6 opacity-75 mb-0 fw-medium">— Nelson Mandela</p>
                             </div>
                         </div>
                     </div>
@@ -495,5 +566,13 @@ onMounted(() => {
 
 .bg-soft-primary {
     background-color: rgba(252, 116, 221, 0.1) !important;
+}
+
+.overlay-gradient {
+    background: linear-gradient(135deg, rgba(252, 116, 221, 0.6) 0%, rgba(33, 150, 243, 0.4) 100%);
+}
+
+.border-dashed {
+    border-style: dashed !important;
 }
 </style>

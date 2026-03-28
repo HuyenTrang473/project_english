@@ -21,17 +21,66 @@ class StoreCauHoiRequest extends FormRequest
     {
         return [
             'noi_dung' => 'required|string|min:5|max:2000',
-            'loai_cau_hoi' => 'required|string|in:multiple_choice,true_false,essay,matching,fill_blank,image_choice',
+            'loai_cau_hoi' => 'required|string|in:multiple_choice,true_false,essay,matching,fill_blank,image_choice,listening,reading,writing',
             'mo_ta_chi_tiet' => 'nullable|string|max:1000',
             'ghi_chu' => 'nullable|string|max:1000',
-            'hinh_anh_url' => 'nullable|url', // Optional now
-            'diem_max' => 'nullable|numeric|min:0.5|max:100', // Optional now
-            'audio_file' => 'nullable|file|mimes:mp3|max:51200', // max 50MB for audio
+            'hinh_anh_url' => 'nullable|url',
+            'diem_max' => 'nullable|numeric|min:0.5|max:100',
+            // Audio validation: required for listening questions, optional for others
+            'audio_file' => [
+                'nullable',
+                'file',
+                'mimes:mp3,wav,ogg',
+                'max:51200', // max 50MB
+                // Custom validation will be done in withValidator()
+            ],
             // Legacy support
             'content' => 'nullable|string|min:5|max:2000',
             'type' => 'nullable|integer|in:1,2,3',
             'maxScore' => 'nullable|numeric|min:0.5|max:100',
         ];
+    }
+
+    /**
+     * Custom validation logic
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            // Check if listening question has audio
+            $loaiCauHoi = $this->input('loai_cau_hoi');
+
+            // Listening questions MUST have audio file
+            if ($loaiCauHoi === 'listening') {
+                // If this is a new question (no ID) or updating without existing audio
+                $hasNewAudio = $this->hasFile('audio_file');
+                $hasExistingAudio = $this->input('audio_url');
+
+                if (!$hasNewAudio && !$hasExistingAudio) {
+                    $validator->errors()->add(
+                        'audio_file',
+                        'Câu hỏi listening phải có file audio. Vui lòng tải lên file audio (.mp3, .wav, .ogg).'
+                    );
+                }
+            }
+
+            // Validate audio file format if present
+            if ($this->hasFile('audio_file')) {
+                $file = $this->file('audio_file');
+                $validMimes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/x-wav'];
+                $validExtensions = ['mp3', 'wav', 'ogg'];
+
+                if (
+                    !in_array($file->getMimeType(), $validMimes) &&
+                    !in_array($file->getClientOriginalExtension(), $validExtensions)
+                ) {
+                    $validator->errors()->add(
+                        'audio_file',
+                        'Chỉ chấp nhận file audio: MP3, WAV, OGG'
+                    );
+                }
+            }
+        });
     }
 
     /**
@@ -49,6 +98,8 @@ class StoreCauHoiRequest extends FormRequest
             'diem_max.numeric' => 'Điểm tối đa phải là số',
             'diem_max.min' => 'Điểm tối đa phải lớn hơn 0.5',
             'diem_max.max' => 'Điểm tối đa không được vượt quá 100',
+            'audio_file.mimes' => 'Chỉ chấp nhận file audio: MP3, WAV, OGG',
+            'audio_file.max' => 'Dung lượng file audio không được vượt quá 50MB',
             // Legacy
             'content.required' => 'Nội dung câu hỏi không được trống',
             'content.min' => 'Nội dung câu hỏi phải có ít nhất 5 ký tự',

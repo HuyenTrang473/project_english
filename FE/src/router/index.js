@@ -119,7 +119,7 @@ const routes = [
     path: "/test/:testId",
     name: "DoTest",
     component: () => import("@/components/DoTest.vue"),
-    meta: { layout: "client", requiresAuth: true, roles: ["hoc_sinh"] },
+    meta: { layout: "client", requiresAuth: true },
   },
   // Lesson Routes
   {

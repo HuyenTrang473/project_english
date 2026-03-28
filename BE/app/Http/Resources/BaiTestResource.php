@@ -39,7 +39,7 @@ class BaiTestResource extends JsonResource
                 'id' => $this->giaoVien->id,
                 'name' => $this->giaoVien->name,
             ]),
-            'questions' => $this->whenLoaded('cauHois', fn() => $this->cauHois->map(function ($q) {
+            'questions' => $this->whenLoaded('cauHois', fn() => $this->cauHois->map(function ($q) use ($request) {
                 return [
                     'id' => $q->id,
                     'id_bai_test' => $q->id_bai_test,
@@ -47,6 +47,9 @@ class BaiTestResource extends JsonResource
                     'mo_ta_chi_tiet' => $q->mo_ta_chi_tiet,
                     'loai_cau_hoi' => $q->loai_cau_hoi,
                     'hinh_anh_url' => $q->hinh_anh_url,
+                    'audio_url' => $this->normalizeAudioUrl($q->audio_url, $request),
+                    'audio_file_name' => $q->audio_file_name,
+                    'audio_file_size' => $q->audio_file_size,
                     'ghi_chu' => $q->ghi_chu,
                     'diem_max' => $q->diem_max,
                     'diem_toi_da' => $q->diem_max, // alias for frontend
@@ -68,5 +71,36 @@ class BaiTestResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
+    }
+
+    private function normalizeAudioUrl($audioUrl, Request $request): ?string
+    {
+        if (!$audioUrl || !is_string($audioUrl)) {
+            return null;
+        }
+
+        $audioUrl = trim($audioUrl);
+        if ($audioUrl === '' || str_starts_with($audioUrl, 'blob:')) {
+            return null;
+        }
+
+        $origin = rtrim($request->getSchemeAndHttpHost(), '/');
+
+        if (str_starts_with($audioUrl, '/storage/')) {
+            return $origin . $audioUrl;
+        }
+
+        if (str_starts_with($audioUrl, 'storage/')) {
+            return $origin . '/' . $audioUrl;
+        }
+
+        if (preg_match('/^https?:\/\//i', $audioUrl)) {
+            $path = parse_url($audioUrl, PHP_URL_PATH);
+            if ($path && str_starts_with($path, '/storage/')) {
+                return $origin . $path;
+            }
+        }
+
+        return $audioUrl;
     }
 }

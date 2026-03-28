@@ -189,8 +189,8 @@ export const useTestStore = defineStore("test", () => {
     error.value = null;
     try {
       const response = await testApi.submitTest(testId, answers);
-      testResult.value = response.data;
-      return response.data;
+      testResult.value = response.data || response;
+      return response;
     } catch (err) {
       error.value = err.response?.data?.message || "Failed to submit test";
       throw err;

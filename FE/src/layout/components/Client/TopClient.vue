@@ -42,14 +42,20 @@
                             <i class="fa-solid fa-pen-to-square fs-5 text-danger"></i>
                             <span class="fw-semibold">Kiểm tra trình độ</span>
                         </a>
-                        <ul class="dropdown-menu shadow-sm border-0">
-                            <li v-for="test in availableTests" :key="test.testId">
-                                <router-link class="dropdown-item" :to="`/test/${test.testId}`">
-                                    {{ test.testName }}
-                                </router-link>
-                            </li>
-                            <li v-if="availableTests.length === 0">
-                                <span class="dropdown-item text-muted">Chưa có bài test</span>
+                        <ul class="dropdown-menu shadow-sm border-0 p-2" style="min-width: 280px;">
+                            <template v-if="Object.keys(groupedTests).length > 0">
+                                <template v-for="(group, key, index) in groupedTests" :key="key">
+                                    <li v-if="index > 0"><hr class="dropdown-divider"></li>
+                                    <li><h6 class="dropdown-header fw-bold text-primary px-3 fs-6">{{ group.label }}</h6></li>
+                                    <li v-for="test in group.tests" :key="test.testId">
+                                        <router-link class="dropdown-item rounded py-2 px-3 fw-medium" :to="`/test/${test.testId}`">
+                                            {{ test.testName }}
+                                        </router-link>
+                                    </li>
+                                </template>
+                            </template>
+                            <li v-else>
+                                <span class="dropdown-item text-muted px-3 py-2">Chưa có bài test</span>
                             </li>
                         </ul>
                     </li>
@@ -109,6 +115,34 @@ export default {
         const availableTests = ref([]);
         const isLoggingOut = ref(false);
 
+        const groupedTests = computed(() => {
+            const groups = {
+                listening: { label: '🎧 Nghe (Listening)', tests: [] },
+                reading: { label: '📖 Đọc (Reading)', tests: [] },
+                writing: { label: '✍️ Viết (Writing)', tests: [] },
+                mixed: { label: '🎯 Hỗn Hợp (Mixed)', tests: [] },
+                other: { label: '📋 Khác', tests: [] }
+            };
+
+            availableTests.value.forEach(test => {
+                const type = test.loai_quiz || 'other';
+                if (groups[type]) {
+                    groups[type].tests.push(test);
+                } else {
+                    groups.other.tests.push(test);
+                }
+            });
+
+            // Filter out empty groups
+            const result = {};
+            for (const [key, group] of Object.entries(groups)) {
+                if (group.tests.length > 0) {
+                    result[key] = group;
+                }
+            }
+            return result;
+        });
+
         const loadAvailableTests = async () => {
             try {
                 const lessonRes = await getLessons();
@@ -121,7 +155,8 @@ export default {
                             const testName = test.ten_bai_test || 'Bài test';
                             availableTests.value.push({
                                 testId: test.id,
-                                testName: testName
+                                testName: testName,
+                                loai_quiz: test.loai_quiz || 'mixed'
                             });
                         }
                     }
@@ -155,6 +190,7 @@ export default {
         return {
             authStore,
             availableTests,
+            groupedTests,
             isLoggingOut,
             handleLogout,
         };

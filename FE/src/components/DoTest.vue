@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getDetail, startTest, submitTest as submitTestApi } from '@/api/testApi';
 
@@ -10,12 +10,59 @@ const router = useRouter();
 const testId = computed(() => route.params.testId);
 const testName = ref('');
 const testDescription = ref('');
+const loaiQuiz = ref('');
 const timeLeft = ref(0);
 const currentQuestionIndex = ref(0);
 const questions = ref([]);
 const loading = ref(true);
 const error = ref('');
 const submitting = ref(false);
+const isPlayingAudio = ref(false);
+const audioPlayerRef = ref(null);
+const audioDuration = ref(0);
+const audioCurrentTime = ref(0);
+const audioLoading = ref(false);
+const audioError = ref('');
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+const API_ORIGIN = new URL(API_BASE_URL).origin;
+
+const normalizeAudioUrl = (audioUrl) => {
+  if (!audioUrl || typeof audioUrl !== 'string') return null;
+
+  const trimmed = audioUrl.trim();
+  if (!trimmed || trimmed.startsWith('blob:')) return null;
+
+  if (trimmed.startsWith('/storage/')) {
+    return `${API_ORIGIN}${trimmed}`;
+  }
+
+  if (trimmed.startsWith('storage/')) {
+    return `${API_ORIGIN}/${trimmed}`;
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.pathname.startsWith('/storage/')) {
+        return `${API_ORIGIN}${parsed.pathname}`;
+      }
+    } catch {
+      // Keep original URL when parsing fails.
+    }
+  }
+
+  return trimmed;
+};
+
+const resetAudioState = () => {
+  isPlayingAudio.value = false;
+  audioDuration.value = 0;
+  audioCurrentTime.value = 0;
+  audioError.value = '';
+  const currentQuestion = questions.value[currentQuestionIndex.value];
+  audioLoading.value = !!currentQuestion?.audio_url;
+};
 
 // --- Timer Logic ---
 let timerInterval = null;
@@ -47,18 +94,36 @@ const loadTest = async () => {
   error.value = '';
   try {
     const res = await getDetail(testId.value);
-    const data = res.data;
+    const data = res?.data ?? res;
 
-    testName.value = data.testName || '';
-    testDescription.value = data.description || '';
-    timeLeft.value = (data.maxTime || 60) * 60; // convert minutes to seconds
+    console.log('API Response:', data); // Debug log
 
-    questions.value = (data.questions || []).map((q) => ({
-      id: q.id,
-      content: q.content,
-      answers: q.answers || [],
-      userAnswer: null, // will hold the selected answer id
-    }));
+    testName.value = data.ten_bai_test || data.testName || '';
+    testDescription.value = data.mo_ta || data.description || '';
+    loaiQuiz.value = data.loai_quiz || 'mixed'; // Load quiz type
+    timeLeft.value = (data.thoi_gian_toi_da || data.maxTime || 60) * 60; // convert minutes to seconds
+
+    questions.value = (data.questions || []).map((q, idx) => {
+      const questionObj = {
+        id: q.id,
+        noi_dung: q.noi_dung || q.content || '',
+        loai_cau_hoi: q.loai_cau_hoi || q.type || 'multiple_choice',
+        audio_url: normalizeAudioUrl(q.audio_url),
+        audio_file_name: q.audio_file_name || null,
+        audio_file_size: q.audio_file_size || null,
+        hinh_anh_url: q.hinh_anh_url || null,
+        answers: (q.answers || []).map(a => ({
+          id: a.id,
+          noi_dung: a.noi_dung || a.content || '',
+        })),
+        userAnswer: null,
+      };
+      console.log(`Question ${idx}:`, questionObj); // Debug each question
+      return questionObj;
+    });
+
+    console.log('All questions loaded:', questions.value);
+    resetAudioState();
 
     // Register the test attempt
     await startTest(testId.value);
@@ -66,9 +131,78 @@ const loadTest = async () => {
   } catch (err) {
     const msg = err.response?.data?.message || err.message;
     error.value = msg || 'Không thể tải bài test';
+    console.error('Error loading test:', err);
   } finally {
     loading.value = false;
   }
+};
+
+const playAudio = () => {
+  const currentQuestion = questions.value[currentQuestionIndex.value];
+  if (currentQuestion.audio_url && audioPlayerRef.value) {
+    // Stop any other audio that might be playing
+    stopAllAudio();
+
+    // Now play the current audio
+    audioPlayerRef.value.play().catch((err) => {
+      console.error('Error playing audio:', err);
+      audioError.value = 'Không thể phát âm thanh. Vui lòng thử lại.';
+    });
+    isPlayingAudio.value = true;
+  }
+};
+
+const stopAudio = () => {
+  if (audioPlayerRef.value) {
+    audioPlayerRef.value.pause();
+    audioPlayerRef.value.currentTime = 0;
+    audioCurrentTime.value = 0;
+    isPlayingAudio.value = false;
+  }
+};
+
+const seekAudio = (event) => {
+  if (audioPlayerRef.value) {
+    audioPlayerRef.value.currentTime = event.target.value;
+  }
+};
+
+const updateAudioTime = () => {
+  if (audioPlayerRef.value) {
+    audioCurrentTime.value = audioPlayerRef.value.currentTime;
+  }
+};
+
+const onAudioLoaded = () => {
+  if (audioPlayerRef.value) {
+    audioDuration.value = audioPlayerRef.value.duration;
+    audioLoading.value = false;
+    audioError.value = '';
+  }
+};
+
+const onAudioError = () => {
+  audioLoading.value = false;
+  audioError.value = 'Không thể tải file âm thanh. Vui lòng kiểm tra kết nối.';
+};
+
+const formatTime = (seconds) => {
+  if (!seconds || isNaN(seconds)) return '0:00';
+  const minutes = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+};
+
+const stopAllAudio = () => {
+  // Find and pause all audio elements on the page
+  const allAudioElements = document.querySelectorAll('audio');
+  allAudioElements.forEach(audio => {
+    if (!audio.paused) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  });
+  isPlayingAudio.value = false;
 };
 
 onMounted(() => {
@@ -77,12 +211,18 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (timerInterval) clearInterval(timerInterval);
+  stopAllAudio(); // Stop any audio when component unmounts
 });
 
 // --- Actions ---
 const selectQuestion = (index) => {
   currentQuestionIndex.value = index;
 };
+
+watch(currentQuestionIndex, () => {
+  stopAllAudio();
+  resetAudioState();
+});
 
 const answerQuestion = (answerId) => {
   questions.value[currentQuestionIndex.value].userAnswer = answerId;
@@ -112,6 +252,16 @@ const handleSubmit = async () => {
 
 const isCurrent = (index) => currentQuestionIndex.value === index;
 const isAnswered = (question) => question.userAnswer !== null;
+
+// Calculate optimal grid columns based on number of questions
+const gridColumns = computed(() => {
+  const totalQuestions = questions.value.length;
+  if (totalQuestions <= 5) return 5; // 1 row
+  if (totalQuestions <= 10) return 5; // 2 rows
+  if (totalQuestions <= 20) return 6; // 3-4 rows
+  if (totalQuestions <= 40) return 8; // 5 rows
+  return 10; // 4+ items per row for large tests
+});
 </script>
 
 <template>
@@ -151,7 +301,7 @@ const isAnswered = (question) => question.userAnswer !== null;
             {{ formattedTime }}
           </div>
 
-          <div class="questions-grid">
+          <div class="questions-grid" :style="{ gridTemplateColumns: `repeat(${gridColumns}, 1fr)` }">
             <div v-for="(q, index) in questions" :key="q.id" class="grid-item" :class="{
               'active': isCurrent(index),
               'completed': isAnswered(q)
@@ -172,14 +322,84 @@ const isAnswered = (question) => question.userAnswer !== null;
           <section v-if="questions.length" class="question-panel">
             <div class="question-card">
               <div class="question-number">Câu {{ currentQuestionIndex + 1 }} / {{ questions.length }}</div>
-              <p class="question-text">{{ questions[currentQuestionIndex].content }}</p>
+
+              <!-- Audio Player for Listening Quizzes -->
+              <div v-if="loaiQuiz === 'listening'" class="listening-section">
+                <div v-if="questions[currentQuestionIndex].audio_url" class="audio-player-container">
+                  <!-- Audio Header -->
+                  <div class="audio-header">
+                    <div class="audio-icon">🎧</div>
+                    <div class="audio-info">
+                      <h4>Phần Nghe</h4>
+                      <p v-if="questions[currentQuestionIndex].audio_file_name" class="audio-filename">
+                        {{ questions[currentQuestionIndex].audio_file_name }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Native Audio Player -->
+                  <div class="audio-player-native">
+                    <audio
+                      :key="`audio-${questions[currentQuestionIndex].id}-${questions[currentQuestionIndex].audio_url || 'none'}`"
+                      ref="audioPlayerRef" :src="questions[currentQuestionIndex].audio_url"
+                      @ended="isPlayingAudio = false" @timeupdate="updateAudioTime" @loadedmetadata="onAudioLoaded"
+                      @error="onAudioError" controls>
+                      Your browser does not support the audio element.
+                    </audio>
+                  </div>
+
+                  <!-- Custom Controls -->
+                  <div class="audio-controls">
+                    <button @click="playAudio" class="audio-btn-play" :disabled="isPlayingAudio">
+                      <span v-if="!isPlayingAudio">▶️ Phát</span>
+                      <span v-else>⏸️ Dừng</span>
+                    </button>
+                    <button @click="stopAudio" class="audio-btn-stop">
+                      ⏹️ Dừng Lại
+                    </button>
+                    <button @click="playAudio" class="audio-btn-repeat" title="Phát Lại">
+                      🔁 Phát Lại
+                    </button>
+                    <div class="audio-duration" v-if="audioDuration">
+                      {{ formatTime(audioCurrentTime) }} / {{ formatTime(audioDuration) }}
+                    </div>
+                  </div>
+
+                  <!-- Progress Bar -->
+                  <div class="audio-progress">
+                    <input v-if="audioDuration" type="range" :value="audioCurrentTime" :max="audioDuration"
+                      @input="seekAudio" class="progress-slider">
+                    <div v-else class="progress-loading">
+                      ⏳ Đang tải âm thanh...
+                    </div>
+                  </div>
+
+                  <!-- Audio Status -->
+                  <div class="audio-status">
+                    <span v-if="audioLoading" class="status-badge loading">⏳ Đang tải...</span>
+                    <span v-else-if="audioError" class="status-badge error">❌ Không thể tải</span>
+                    <span v-else-if="isPlayingAudio" class="status-badge playing">🔊 Đang phát</span>
+                    <span v-else class="status-badge ready">✓ Sẵn sàng</span>
+                  </div>
+                </div>
+
+                <!-- No Audio Message -->
+                <div v-else class="no-audio-message">
+                  <div class="alert alert-warning">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    Câu hỏi này chưa có file audio. Vui lòng liên hệ giáo viên.
+                  </div>
+                </div>
+              </div>
+
+              <p class="question-text">{{ questions[currentQuestionIndex].noi_dung }}</p>
 
               <div class="options-list">
                 <label v-for="ans in questions[currentQuestionIndex].answers" :key="ans.id" class="option-label"
                   :class="{ 'selected': questions[currentQuestionIndex].userAnswer === ans.id }">
                   <input type="radio" :name="`q-${questions[currentQuestionIndex].id}`" :value="ans.id"
                     :checked="questions[currentQuestionIndex].userAnswer === ans.id" @change="answerQuestion(ans.id)">
-                  <span class="option-text">{{ ans.content }}</span>
+                  <span class="option-text">{{ ans.noi_dung }}</span>
                 </label>
               </div>
 
@@ -333,8 +553,8 @@ const isAnswered = (question) => question.userAnswer !== null;
 
 .questions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
   gap: 10px;
+  transition: grid-template-columns 0.3s ease;
 }
 
 .grid-item {
@@ -359,10 +579,10 @@ const isAnswered = (question) => question.userAnswer !== null;
 
 /* Grid States */
 .grid-item.completed {
-  background-color: #e0f7fa;
-  /* Light Green/Teal tint */
-  color: #00897b;
-  border: 1px solid #00897b;
+  background-color: #ffc0e0;
+  /* Light Pink */
+  color: #d6348f;
+  border: 1px solid #d6348f;
 }
 
 .grid-item.active {
@@ -396,8 +616,8 @@ const isAnswered = (question) => question.userAnswer !== null;
 }
 
 .dot.completed {
-  background: #e0f7fa;
-  border-color: #00897b;
+  background: #ffc0e0;
+  border-color: #d6348f;
 }
 
 .dot.active {
@@ -510,6 +730,388 @@ const isAnswered = (question) => question.userAnswer !== null;
 
 .nav-btn.primary:hover {
   background: #555;
+}
+
+/* Audio Player */
+.audio-section {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  background: #f0f8ff;
+  border: 1px solid #87ceeb;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.audio-section audio {
+  flex: 1;
+  max-width: 300px;
+  height: 30px;
+  accent-color: #fc74dd;
+}
+
+.audio-btn {
+  padding: 0.6rem 1.2rem;
+  background: #fc74dd;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.audio-btn:hover:not(:disabled) {
+  background: #ff4d9e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(252, 116, 221, 0.4);
+}
+
+.audio-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== LISTENING SECTION STYLES ===== */
+.listening-section {
+  margin-bottom: 2rem;
+  padding-top: 1rem;
+  border-top: 2px solid #f0f0f0;
+}
+
+.audio-player-container {
+  background: linear-gradient(135deg, #fff7fc 0%, #f5e8ff 100%);
+  border: 2px solid #fc74dd;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(252, 116, 221, 0.15);
+}
+
+/* Audio Header */
+.audio-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.audio-icon {
+  font-size: 2rem;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.audio-info h4 {
+  margin: 0;
+  color: #333;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.audio-filename {
+  margin: 0.3rem 0 0 0;
+  color: #666;
+  font-size: 0.85rem;
+  word-break: break-word;
+}
+
+/* Native Audio Player */
+.audio-player-native {
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.audio-player-native audio {
+  width: 100%;
+  height: 50px;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(252, 116, 221, 0.1);
+}
+
+/* Custom Audio Controls */
+.audio-controls {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.audio-btn-play,
+.audio-btn-stop,
+.audio-btn-repeat {
+  padding: 0.65rem 1.2rem;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 100px;
+  max-width: 150px;
+}
+
+.audio-btn-play {
+  background: linear-gradient(135deg, #fc74dd 0%, #ff4d9e 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(252, 116, 221, 0.3);
+}
+
+.audio-btn-play:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(252, 116, 221, 0.5);
+}
+
+.audio-btn-stop {
+  background: #ff6b6b;
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.2);
+}
+
+.audio-btn-stop:hover {
+  background: #ff5252;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+}
+
+.audio-btn-repeat {
+  background: #4ecdc4;
+  color: white;
+  box-shadow: 0 4px 15px rgba(78, 205, 196, 0.2);
+}
+
+.audio-btn-repeat:hover {
+  background: #3bb9af;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
+}
+
+.audio-btn-play:disabled,
+.audio-btn-stop:disabled,
+.audio-btn-repeat:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.audio-duration {
+  padding: 0.5rem 1rem;
+  background: white;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #666;
+  border: 1px solid #e0e0e0;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* Progress Bar */
+.audio-progress {
+  margin-bottom: 1rem;
+}
+
+.progress-slider {
+  width: 100%;
+  height: 8px;
+  border-radius: 10px;
+  background: #ddd;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.progress-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fc74dd;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(252, 116, 221, 0.4);
+  transition: all 0.2s;
+}
+
+.progress-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(252, 116, 221, 0.6);
+}
+
+.progress-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fc74dd;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px rgba(252, 116, 221, 0.4);
+  transition: all 0.2s;
+}
+
+.progress-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(252, 116, 221, 0.6);
+}
+
+.progress-loading {
+  padding: 0.8rem;
+  text-align: center;
+  color: #999;
+  font-size: 0.9rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Audio Status Badge */
+.audio-status {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status-badge.loading {
+  background: #fff3cd;
+  color: #856404;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.status-badge.error {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-badge.playing {
+  background: #d1ecf1;
+  color: #0c5460;
+  animation: pulse-blue 1s ease-in-out infinite;
+}
+
+@keyframes pulse-blue {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.status-badge.ready {
+  background: #d4edda;
+  color: #155724;
+}
+
+/* No Audio Message */
+.no-audio-message {
+  margin-bottom: 2rem;
+}
+
+.no-audio-message .alert {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 12px;
+  padding: 1rem;
+  color: #856404;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+/* Responsive audio controls */
+@media (max-width: 768px) {
+  .audio-controls {
+    gap: 0.5rem;
+  }
+
+  .audio-btn-play,
+  .audio-btn-stop,
+  .audio-btn-repeat {
+    flex: 1;
+    min-width: 80px;
+    max-width: none;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.8rem;
+  }
+
+  .audio-duration {
+    min-width: 90px;
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .audio-player-container {
+    padding: 1rem;
+  }
+
+  .audio-header {
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .audio-icon {
+    font-size: 1.5rem;
+  }
+
+  .audio-controls {
+    gap: 0.3rem;
+  }
+
+  .audio-btn-play,
+  .audio-btn-stop,
+  .audio-btn-repeat {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.5rem;
+  }
+
+  .audio-info h4 {
+    font-size: 0.95rem;
+  }
+
+  .audio-filename {
+    font-size: 0.8rem;
+  }
 }
 
 /* Responsive */

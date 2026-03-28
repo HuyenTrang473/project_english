@@ -27,8 +27,12 @@ class BaiTestController extends Controller
     {
         try {
             $query = BaiTest::where('id_lesson', $lessonId)
-                ->published()
                 ->with('giaoVien:id,name');
+
+            // Only show published tests by default, but allow including drafts if requested
+            if (!$request->has('include_drafts') || !$request->include_drafts) {
+                $query->published();
+            }
 
             // Filter by name/search
             if ($request->has('search') && $request->search) {
@@ -75,9 +79,11 @@ class BaiTestController extends Controller
 
             // Nếu là giáo viên hoặc admin, xem bài test của họ (bất kỳ trạng thái nào)
             // Nếu là học sinh, chỉ xem bài test đã công bố
-            if ($user->role === 'giao_vien' || $user->role === 'admin') {
-                $query = BaiTest::where('id_giao_vien', $user->id)
-                    ->with('lesson:id,tieu_de');
+            if ($user && ($user->role === 'giao_vien' || $user->role === 'admin')) {
+                $query = BaiTest::with('lesson:id,tieu_de')->with('giaoVien:id,name');
+                if ($user && $user->role !== 'admin') {
+                    $query->where('id_giao_vien', $user->id);
+                }
             } else {
                 // Học sinh chỉ xem bài test đã công bố
                 $query = BaiTest::published()
@@ -125,8 +131,12 @@ class BaiTestController extends Controller
     public function myTests(Request $request)
     {
         try {
-            $query = BaiTest::where('id_giao_vien', auth('sanctum')->id())
-                ->with('lesson:id,tieu_de');
+            $user = auth('sanctum')->user();
+            $query = BaiTest::with('lesson:id,tieu_de');
+
+            if ($user && $user->role !== 'admin') {
+                $query->where('id_giao_vien', $user->id);
+            }
 
             // Filter by name/search
             if ($request->has('search') && $request->search) {
@@ -179,12 +189,10 @@ class BaiTestController extends Controller
                 ], 404);
             }
 
-            // Check access control:
-            // - If published: everyone can view
-            // - If draft: only owner (giáo viên) or admin can view
+
             $user = auth('sanctum')->user();
             $isOwner = $test->id_giao_vien === auth('sanctum')->id();
-            $isAdmin = $user && $user->isAdmin();
+            $isAdmin = $user && ($user->role === 'admin' || $user->role === 2);
             $isPublished = $test->trang_thai === 2;
 
             if (!$isPublished && !$isOwner && !$isAdmin) {
@@ -214,6 +222,7 @@ class BaiTestController extends Controller
             $data = [
                 'id' => $test->id,
                 'ten_bai_test' => $test->ten_bai_test,
+                'loai_quiz' => $test->loai_quiz,
                 'mo_ta' => $test->mo_ta,
                 'thoi_gian_toi_da' => $test->thoi_gian_toi_da,
                 'diem_tong_max' => $test->diem_tong_max,
@@ -234,6 +243,9 @@ class BaiTestController extends Controller
                         'mo_ta_chi_tiet' => $q->mo_ta_chi_tiet,
                         'loai_cau_hoi' => $q->loai_cau_hoi,
                         'hinh_anh_url' => $q->hinh_anh_url,
+                        'audio_url' => $this->normalizeQuestionAudioUrl($q->audio_url, request()),
+                        'audio_file_name' => $q->audio_file_name,
+                        'audio_file_size' => $q->audio_file_size,
                         'diem_max' => $q->diem_max,
                         'thu_tu' => $q->thu_tu,
                         'answers' => $answers->map(function ($a) {
@@ -321,6 +333,12 @@ class BaiTestController extends Controller
         try {
             DB::beginTransaction();
 
+            // Log questions data received
+            Log::info('Create BaiTest - Questions Data Received', [
+                'has_questions' => $request->has('questions'),
+                'questions_raw' => $request->get('questions'),
+            ]);
+
             $test = BaiTest::create([
                 'id_giao_vien' => auth('sanctum')->id(),
                 'id_lesson' => $request->id_lesson,
@@ -342,8 +360,11 @@ class BaiTestController extends Controller
             ]);
 
             // Create questions if provided
-            if ($request->has('questions') && is_array($request->questions)) {
-                foreach ($request->questions as $index => $questionData) {
+            $questionsData = $this->parseQuestionsData($request);
+            Log::info('Parsed Questions Data', ['count' => count($questionsData ?? []), 'data' => $questionsData]);
+
+            if ($questionsData) {
+                foreach ($questionsData as $index => $questionData) {
                     $question = CauHoi::create([
                         'id_bai_test' => $test->id,
                         'noi_dung' => $questionData['noi_dung'] ?? $questionData['content'] ?? '',
@@ -411,7 +432,7 @@ class BaiTestController extends Controller
 
             $currentUserId = auth('sanctum')->id();
             $currentUser = auth('sanctum')->user();
-            $isAdmin = $currentUser && ($currentUser->role === 'admin' || $currentUser->role === 2);
+            $isAdmin = $currentUser && $currentUser->role === 'admin';
 
             Log::info('Update BaiTest Authorization Check', [
                 'test_id' => $id,
@@ -419,6 +440,12 @@ class BaiTestController extends Controller
                 'current_user_id' => $currentUserId,
                 'current_user_role' => $currentUser ? $currentUser->role : 'null',
                 'is_admin' => $isAdmin,
+            ]);
+
+            // Log questions data received
+            Log::info('Update BaiTest - Questions Data Received', [
+                'has_questions' => $request->has('questions'),
+                'questions_raw' => $request->get('questions'),
             ]);
 
             if ((int)$test->id_giao_vien !== (int)$currentUserId && !$isAdmin) {
@@ -450,10 +477,11 @@ class BaiTestController extends Controller
             ]);
 
             // Handle questions update if provided
-            if ($request->has('questions') && is_array($request->questions)) {
+            $questionsData = $this->parseQuestionsData($request);
+            if ($questionsData) {
                 // Separate existing questions (with valid database id) from new questions (with temporary or no id)
                 $existingQuestionIds = [];
-                foreach ($request->questions as $index => $questionData) {
+                foreach ($questionsData as $index => $questionData) {
                     $questionId = $questionData['id'] ?? null;
 
                     // Check if this is an existing question in the database
@@ -474,6 +502,25 @@ class BaiTestController extends Controller
                             'thu_tu' => $index + 1,
                             'diem_max' => $questionData['diem_max'] ?? $questionData['diem_toi_da'] ?? $existingQuestion->diem_max,
                         ]);
+
+                        // Update answers - delete old and create new
+                        if (isset($questionData['answers']) && is_array($questionData['answers'])) {
+                            // Delete old answers
+                            $existingQuestion->dapAns()->delete();
+
+                            // Create new answers
+                            foreach ($questionData['answers'] as $answerIndex => $answerData) {
+                                DapAn::create([
+                                    'id_cau_hoi' => $existingQuestion->id,
+                                    'noi_dung' => $answerData['noi_dung'] ?? $answerData['content'] ?? '',
+                                    'hinh_anh_url' => $answerData['hinh_anh_url'] ?? null,
+                                    'mo_ta_chi_tiet' => $answerData['mo_ta_chi_tiet'] ?? null,
+                                    'la_dap_an_dung' => $answerData['la_dap_an_dung'] ?? $answerData['correct'] ?? false,
+                                    'diem_tu_dong' => $answerData['diem_tu_dong'] ?? 0,
+                                    'thu_tu' => $answerIndex + 1,
+                                ]);
+                            }
+                        }
 
                         // Handle audio upload if present
                         $audioKey = 'audio_' . $index;
@@ -572,7 +619,7 @@ class BaiTestController extends Controller
 
             $currentUserId = auth('sanctum')->id();
             $currentUser = auth('sanctum')->user();
-            $isAdmin = $currentUser && $currentUser->role === 'admin';
+            $isAdmin = $currentUser && ($currentUser->role === 'admin' || $currentUser->role === 2);
 
             if ((int)$test->id_giao_vien !== (int)$currentUserId && !$isAdmin) {
                 return response()->json([
@@ -622,7 +669,7 @@ class BaiTestController extends Controller
 
             // Kiểm tra học sinh đã enroll khóa học chứa bài test (bỏ qua cho giáo viên/admin)
             $user = auth('sanctum')->user();
-            if ($user->isStudent()) {
+            if ($user && $user->role === 'hoc_sinh') {
                 $enrolled = CourseEnrollment::where('id_hoc_sinh', $userId)
                     ->where('id_lesson', $test->id_lesson)
                     ->exists();
@@ -632,6 +679,7 @@ class BaiTestController extends Controller
                     CourseEnrollment::create([
                         'id_hoc_sinh' => $userId,
                         'id_lesson' => $test->id_lesson,
+                        'ngay_dang_ky' => now(),
                     ]);
                 }
             }
@@ -854,8 +902,9 @@ class BaiTestController extends Controller
 
             $test = BaiTest::find($testId);
 
-            // Check if student can review
-            if (!$test->cho_xem_lai_test && $result->trang_thai !== 'pending_review') {
+            // Check if student can review (allow if result is pending_review, or if test allows review)
+            // Also allow immediate viewing if test is configured to show results immediately
+            if (!$test->cho_xem_lai_test && !$test->hien_thi_ket_qua_ngay_lap && $result->trang_thai !== 'pending_review') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không được phép xem lại bài test này',
@@ -1043,7 +1092,7 @@ class BaiTestController extends Controller
         $score = 0;
 
         foreach ($correctAnswers as $correct) {
-            if ($studentAnswer['id_dap_an'] == $correct->id) {
+            if ($studentAnswer['id_dap_an'] === $correct->id) {
                 $score += $pointPerCorrect;
                 break;
             }
@@ -1076,6 +1125,7 @@ class BaiTestController extends Controller
     private function updateTestAnalytics($testId, $result, $validQuestions)
     {
         $analytics = TestAnalytic::firstOrCreate(['id_bai_test' => $testId]);
+        $test = BaiTest::find($testId);
 
         $completedResults = StudentTestResult::where('id_bai_test', $testId)
             ->where('trang_thai', 'completed')
@@ -1083,7 +1133,8 @@ class BaiTestController extends Controller
 
         $totalScore = $completedResults->sum('diem_tong');
         $totalTime = $completedResults->sum('thoi_gian_su_dung');
-        $passCount = $completedResults->where('diem_tong', '>=', 50)->count();
+        $passMark = $test ? ($test->diem_tong_max * 50) / 100 : 50; // 50% để pass
+        $passCount = $completedResults->where('diem_tong', '>=', $passMark)->count();
 
         $analytics->update([
             'so_hoc_sinh_lam' => $completedResults->count(),
@@ -1161,8 +1212,13 @@ class BaiTestController extends Controller
                 throw new \Exception('Dung lượng file không được vượt quá 50MB');
             }
 
-            if ($file->getMimeType() !== 'audio/mpeg' && $file->getClientOriginalExtension() !== 'mp3') {
-                throw new \Exception('Chỉ chấp nhận file MP3');
+            // Accept MP3, WAV, OGG
+            $validMimeTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/x-wav'];
+            $validExtensions = ['mp3', 'wav', 'ogg'];
+            $extension = strtolower($file->getClientOriginalExtension());
+
+            if (!in_array($file->getMimeType(), $validMimeTypes) && !in_array($extension, $validExtensions)) {
+                throw new \Exception('Chỉ chấp nhận file audio: MP3, WAV, OGG');
             }
 
             // Remove old audio file if exists
@@ -1170,19 +1226,41 @@ class BaiTestController extends Controller
                 Storage::disk('public')->delete('audio/questions/' . $question->audio_file_name);
             }
 
-            // Store new audio file
-            $filename = 'question_' . $question->id . '_' . time() . '.mp3';
+            // Store new audio file with extension
+            $filename = 'question_' . $question->id . '_' . time() . '.' . $extension;
             $path = $file->storeAs('audio/questions', $filename, 'public');
+
+            if (!$path) {
+                throw new \Exception('Không thể lưu file audio');
+            }
+
+            // Build absolute URL from current API origin to avoid APP_URL mismatch issues.
+            $audioUrl = rtrim($request->getSchemeAndHttpHost(), '/') . '/storage/' . ltrim($path, '/');
+
+            // Log for debugging
+            Log::debug('Audio path information', [
+                'storage_path' => $path,
+                'filename' => $filename,
+                'base_path' => '/storage/audio/questions/',
+                'full_url' => $audioUrl,
+            ]);
 
             // Update question with audio info
             $question->update([
                 'audio_file_name' => $filename,
                 'audio_file_size' => $file->getSize(),
-                'audio_url' => Storage::url($path),
+                'audio_url' => $audioUrl,
+            ]);
+
+            Log::info('Audio file saved successfully', [
+                'question_id' => $question->id,
+                'filename' => $filename,
+                'path' => $path,
+                'audio_url' => $audioUrl,
             ]);
         } catch (\Exception $e) {
             // Log error but don't fail the entire request
-            Log::error('Error uploading question audio: ' . $e->getMessage());
+            Log::error('Error uploading question audio: ' . $e->getMessage(), ['audio_key' => $audioKey, 'question_id' => $question->id]);
         }
     }
 
@@ -1209,5 +1287,61 @@ class BaiTestController extends Controller
             // Log error but don't fail
             Log::error('Error removing question audio: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Normalize question audio URL for client playback.
+     */
+    private function normalizeQuestionAudioUrl($audioUrl, Request $request)
+    {
+        if (!$audioUrl || !is_string($audioUrl)) {
+            return null;
+        }
+
+        $audioUrl = trim($audioUrl);
+        if ($audioUrl === '' || str_starts_with($audioUrl, 'blob:')) {
+            return null;
+        }
+
+        $origin = rtrim($request->getSchemeAndHttpHost(), '/');
+
+        if (str_starts_with($audioUrl, '/storage/')) {
+            return $origin . $audioUrl;
+        }
+
+        if (str_starts_with($audioUrl, 'storage/')) {
+            return $origin . '/' . $audioUrl;
+        }
+
+        if (preg_match('/^https?:\/\//i', $audioUrl)) {
+            $path = parse_url($audioUrl, PHP_URL_PATH);
+            if ($path && str_starts_with($path, '/storage/')) {
+                return $origin . $path;
+            }
+        }
+
+        return $audioUrl;
+    }
+
+    /**
+     * Parse questions data from request (handles both JSON string and array format)
+     */
+    private function parseQuestionsData($request)
+    {
+        if (!$request->has('questions')) {
+            return null;
+        }
+
+        $questionsData = $request->questions;
+
+        // If questions is a JSON string, decode it
+        if (is_string($questionsData)) {
+            $decoded = json_decode($questionsData, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $questionsData = $decoded;
+            }
+        }
+
+        return is_array($questionsData) ? $questionsData : null;
     }
 }

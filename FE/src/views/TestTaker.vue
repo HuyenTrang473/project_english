@@ -315,9 +315,9 @@ const onSubmitTest = async () => {
   try {
     const answers = studentAnswers.value.map((answer, index) => ({
       id_cau_hoi: questions.value[index].id,
-      id_dap_an: typeof answer === 'number' ? answer : null,
-      cau_tra_loi_tu_do: typeof answer === 'string' ? answer : null,
-    })).filter(a => a.id_dap_an || a.cau_tra_loi_tu_do);
+      id_dap_an: answer !== '' && answer !== null && answer !== undefined && !isNaN(answer) ? parseInt(answer) : null,
+      cau_tra_loi_tu_do: typeof answer === 'string' && isNaN(answer) ? answer : null,
+    }));
 
     await testStore.submitTest(testId.value, answers);
 
@@ -334,7 +334,10 @@ const loadTest = async () => {
     currentTest.value = test;
     questions.value = test.questions || [];
     initializeAnswers();
-    
+
+    // Start test attempt — creates StudentTestResult record required for submission
+    await testStore.startTest(testId.value);
+
     // Initialize timer
     timeRemaining.value = test.thoi_gian_toi_da * 60; // Convert to seconds
     startTimer();

@@ -32,9 +32,11 @@
           <div class="file-section">
             <div class="file-info">
               <strong>📁 {{ getFileName(lesson.file.path) }}</strong>
-              <span class="file-meta">{{ formatFileSize(lesson.file.size) }} • {{ lesson.file.type.toUpperCase() }}</span>
+              <span class="file-meta">{{ formatFileSize(lesson.file.size) }} • {{ lesson.file.type.toUpperCase()
+                }}</span>
             </div>
-            <a :href="lesson.file.url" download :title="`Tải ${getFileName(lesson.file.path)}`" class="btn btn-download">
+            <a :href="lesson.file.url" download :title="`Tải ${getFileName(lesson.file.path)}`"
+              class="btn btn-download">
               ⬇️ Tải File
             </a>
           </div>
@@ -49,9 +51,9 @@
           <h2>📝 Bài Kiểm Tra Liên Quan</h2>
           <div v-if="tests.length > 0" class="tests-list">
             <div v-for="test in tests" :key="test.id" class="test-item">
-              <strong>📋 {{ test.title }}</strong>
-              <p>{{ test.description }}</p>
-              <router-link :to="`/tests/${test.id}/take`" class="btn btn-sm btn-primary">
+              <strong>📋 {{ test.ten_bai_test }}</strong>
+              <p>{{ test.mo_ta }}</p>
+              <router-link :to="`/test/${test.id}`" class="btn btn-sm btn-primary">
                 ➤ Làm Bài
               </router-link>
             </div>
@@ -102,11 +104,13 @@ export default {
     },
     async loadTests(lessonId) {
       try {
-        // Implement if you have API endpoint for tests related to lesson
-        // For now, just set empty
-        this.tests = [];
+        // Import the test API function
+        const { getListByLesson } = await import("@/api/testApi");
+        const response = await getListByLesson(lessonId);
+        this.tests = response.data || [];
       } catch (err) {
         console.error("Error loading tests:", err);
+        this.tests = [];
       }
     },
     formatDate(dateString) {

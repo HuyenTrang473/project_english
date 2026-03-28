@@ -119,7 +119,20 @@ class CauHoiController extends Controller
 
             // Handle audio upload if present
             if ($request->hasFile('audio_file')) {
-                $this->handleQuestionAudioUpload($request, $question);
+                try {
+                    $this->handleQuestionAudioUpload($request, $question);
+                } catch (\Exception $e) {
+                    // Clean up the question if audio upload fails for listening questions
+                    if ($request->loai_cau_hoi === 'listening') {
+                        $question->delete();
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Lỗi khi tải audio: ' . $e->getMessage(),
+                        ], 422);
+                    }
+                    // For non-listening questions, log but continue
+                    Log::warning('Audio upload failed for non-listening question: ' . $e->getMessage());
+                }
             }
 
             return response()->json([
@@ -194,7 +207,18 @@ class CauHoiController extends Controller
 
             // Handle audio upload if present
             if ($request->hasFile('audio_file')) {
-                $this->handleQuestionAudioUpload($request, $question);
+                try {
+                    $this->handleQuestionAudioUpload($request, $question);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Lỗi khi tải audio: ' . $e->getMessage(),
+                    ], 422);
+                }
+            }
+            // Handle audio removal if flagged
+            elseif ($request->input('_removeAudio') === true || $request->input('_removeAudio') === 'true') {
+                $this->removeQuestionAudio($question);
             }
 
             return response()->json([
@@ -273,6 +297,7 @@ class CauHoiController extends Controller
 
     /**
      * Handle question audio file upload
+     * Supports: MP3, WAV, OGG formats
      */
     private function handleQuestionAudioUpload($request, $question)
     {
@@ -283,13 +308,19 @@ class CauHoiController extends Controller
 
             $file = $request->file('audio_file');
 
-            // Validate file
+            // Validate file size
             if ($file->getSize() > 50 * 1024 * 1024) { // 50MB max
                 throw new \Exception('Dung lượng file không được vượt quá 50MB');
             }
 
-            if ($file->getMimeType() !== 'audio/mpeg' && $file->getClientOriginalExtension() !== 'mp3') {
-                throw new \Exception('Chỉ chấp nhận file MP3');
+            // Validate file format - support mp3, wav, ogg
+            $validMimes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/x-wav'];
+            $validExtensions = ['mp3', 'wav', 'ogg'];
+            $extension = $file->getClientOriginalExtension();
+            $mimeType = $file->getMimeType();
+
+            if (!in_array($mimeType, $validMimes) && !in_array($extension, $validExtensions)) {
+                throw new \Exception('Chỉ chấp nhận file audio MP3, WAV hoặc OGG');
             }
 
             // Remove old audio file if exists
@@ -297,9 +328,13 @@ class CauHoiController extends Controller
                 Storage::disk('public')->delete('audio/questions/' . $question->audio_file_name);
             }
 
-            // Store new audio file
-            $filename = 'question_' . $question->id . '_' . time() . '.mp3';
+            // Store new audio file with proper naming
+            $filename = 'question_' . $question->id . '_' . time() . '.' . $extension;
             $path = $file->storeAs('audio/questions', $filename, 'public');
+
+            if (!$path) {
+                throw new \Exception('Lỗi khi lưu file audio');
+            }
 
             // Update question with audio info
             $question->update([
@@ -307,9 +342,33 @@ class CauHoiController extends Controller
                 'audio_file_size' => $file->getSize(),
                 'audio_url' => Storage::url($path),
             ]);
+
+            Log::info("Audio uploaded for question {$question->id}: {$filename}");
         } catch (\Exception $e) {
-            // Log error but don't fail the entire request
             Log::error('Error uploading question audio: ' . $e->getMessage());
+            throw $e; // Re-throw to be caught by controller
+        }
+    }
+
+    /**
+     * Remove audio file from question
+     */
+    private function removeQuestionAudio($question)
+    {
+        try {
+            if ($question->audio_file_name && Storage::disk('public')->exists('audio/questions/' . $question->audio_file_name)) {
+                Storage::disk('public')->delete('audio/questions/' . $question->audio_file_name);
+            }
+
+            $question->update([
+                'audio_file_name' => null,
+                'audio_file_size' => null,
+                'audio_url' => null,
+            ]);
+
+            Log::info("Audio removed for question {$question->id}");
+        } catch (\Exception $e) {
+            Log::error('Error removing question audio: ' . $e->getMessage());
         }
     }
 }

@@ -65,11 +65,7 @@
                 <!-- Quản lý Giáo viên -->
                 <AdminTeacherManager v-else-if="activeMenu === 'teachers'" />
 
-                <!-- Thống kê -->
-                <div v-else-if="activeMenu === 'stats'" class="placeholder-section">
-                    <h4>Thống kê</h4>
-                    <p>Chức năng đang phát triển...</p>
-                </div>
+
             </div>
         </div>
     </div>
@@ -100,7 +96,6 @@ export default {
                 { key: 'lessons', label: 'Quản lý Bài học', icon: '📚', route: '/lessons', adminOnly: false },
                 { key: 'tests', label: 'Quản lý Đề thi', icon: '📝', route: '/tests', adminOnly: false },
                 { key: 'teachers', label: 'Quản lý Giáo viên', icon: '👨‍🏫', route: null, adminOnly: true },
-                { key: 'stats', label: 'Thống kê', icon: '📊', route: null, adminOnly: false },
             ],
             stats: {
                 lessons: 0,

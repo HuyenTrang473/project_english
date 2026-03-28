@@ -46,28 +46,54 @@
               placeholder="Ghi chú thêm (chỉ dành cho giáo viên)"></textarea>
           </div>
 
+          <!-- Point Value -->
+          <div class="mb-3">
+            <label class="form-label">Điểm Tối Đa <span class="text-danger">*</span></label>
+            <input v-model.number="form.diem_toi_da" type="number" class="form-control" min="0.1" step="0.1"
+              placeholder="Điểm tối đa cho câu hỏi này">
+          </div>
+
           <!-- Audio Upload for Listening Questions -->
-          <div v-if="['listening', 'mixed'].includes(loaiQuiz)" class="mb-3">
+          <div v-if="loaiQuiz === 'listening'" class="mb-3">
             <label class="form-label">
-              📁 Upload File Audio (.mp3)
-              <span v-if="loaiQuiz === 'listening'" class="text-danger">*</span>
+              🎧 File Audio (<span class="text-danger">Bắt Buộc</span>)
             </label>
-            <div class="input-group">
-              <input type="file" accept=".mp3" @change="handleAudioUpload" class="form-control"
-                :id="`audio-upload-${Date.now()}`" ref="audioInput">
-              <button v-if="form.audio_file_name" @click="removeAudio" class="btn btn-outline-danger" type="button">
-                🗑️ Xóa
-              </button>
-            </div>
-            <small class="form-text text-muted">
-              Chỉ chấp nhận file MP3, dung lượng tối đa 50MB
-            </small>
-            <div v-if="form.audio_file_name" class="alert alert-info mt-2">
-              <i class="fa fa-check"></i> File đã upload: <strong>{{ form.audio_file_name }}</strong> ({{
-                formatFileSize(form.audio_file_size) }})
-            </div>
-            <div v-if="audioUploadError" class="alert alert-danger mt-2">
-              <i class="fa fa-exclamation-circle"></i> {{ audioUploadError }}
+            <div class="audio-upload-section">
+              <div class="input-group mb-2">
+                <input type="file" accept=".mp3,.wav,.ogg,audio/mpeg,audio/wav,audio/ogg" @change="handleAudioUpload"
+                  class="form-control" :id="`audio-upload-${Date.now()}`" ref="audioInput" :disabled="audioUploading">
+                <button v-if="form.audio_file_name && form.audio_url" @click="removeAudio"
+                  class="btn btn-outline-danger" type="button" :disabled="audioUploading">
+                  🗑️ Xóa
+                </button>
+              </div>
+              <small class="form-text text-muted d-block mb-2">
+                Chỉ chấp nhận: MP3, WAV, OGG | Dung lượng tối đa: 50MB
+              </small>
+
+              <!-- Audio Preview -->
+              <div v-if="form.audio_url && !audioUploading" class="alert alert-success mb-2">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <i class="fa fa-music"></i> <strong>{{ form.audio_file_name }}</strong><br>
+                    <small>{{ formatFileSize(form.audio_file_size) }}</small>
+                  </div>
+                  <audio controls :src="form._audioPreviewUrl || form.audio_url" class="audio-preview"></audio>
+                </div>
+              </div>
+
+              <!-- Upload Progress -->
+              <div v-if="audioUploading" class="progress mb-2">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                  style="width: 100%">
+                  📤 Đang tải audio...
+                </div>
+              </div>
+
+              <!-- Error Messages -->
+              <div v-if="audioUploadError" class="alert alert-danger mb-0">
+                <i class="fa fa-exclamation-circle"></i> {{ audioUploadError }}
+              </div>
             </div>
           </div>
 
@@ -180,12 +206,14 @@ const form = reactive({
   ghi_chu: "",
   answers: [],
   dap_an_mau: "",
+  diem_toi_da: 1,  // ✅ ADD: Point value for the question
   audio_url: "",
   audio_file_name: "",
   audio_file_size: 0,
 });
 
 const audioFile = ref(null);
+const audioUploading = ref(false);
 const audioUploadError = ref("");
 const removeAudioFlag = ref(false);
 
@@ -253,9 +281,14 @@ const handleAudioUpload = (event) => {
   audioUploadError.value = '';
   removeAudioFlag.value = false;
 
-  // Validate file type
-  if (file.type !== 'audio/mpeg' && !file.name.endsWith('.mp3')) {
-    audioUploadError.value = 'Chỉ chấp nhận file MP3';
+  // Validate file type - support mp3, wav, ogg
+  const validTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/x-wav'];
+  const validExtensions = ['mp3', 'wav', 'ogg'];
+  const extension = file.name.split('.').pop().toLowerCase();
+
+  if (!validTypes.includes(file.type) && !validExtensions.includes(extension)) {
+    audioUploadError.value = 'Chỉ chấp nhận file audio: MP3, WAV, OGG';
+    event.target.value = ''; // Reset input
     return;
   }
 
@@ -263,16 +296,29 @@ const handleAudioUpload = (event) => {
   const maxSize = 50 * 1024 * 1024;
   if (file.size > maxSize) {
     audioUploadError.value = 'Dung lượng file không được vượt quá 50MB';
+    event.target.value = ''; // Reset input
     return;
   }
 
   audioFile.value = file;
   form.audio_file_name = file.name;
   form.audio_file_size = file.size;
+  // ✅ FIX: Only create blob:// for preview, keep audio_url for storage reference
+  // Store the preview separately - don't pollute audio_url with blob://
+  form._audioPreviewUrl = URL.createObjectURL(file);
+  console.log('Audio file selected:', file.name, 'Preview URL:', form._audioPreviewUrl);
 };
 
 const removeAudio = () => {
   audioFile.value = null;
+  // ✅ FIX: Revoke both blob URLs properly
+  if (form._audioPreviewUrl && form._audioPreviewUrl.startsWith('blob:')) {
+    URL.revokeObjectURL(form._audioPreviewUrl);
+  }
+  if (form.audio_url && form.audio_url.startsWith('blob:')) {
+    URL.revokeObjectURL(form.audio_url);
+  }
+  form._audioPreviewUrl = "";
   form.audio_url = "";
   form.audio_file_name = '';
   form.audio_file_size = 0;
@@ -286,6 +332,16 @@ const onSave = () => {
   if (!form.noi_dung) {
     alert("Vui lòng nhập nội dung câu hỏi");
     return;
+  }
+
+  // Validate audio for listening quiz
+  if (props.loaiQuiz === 'listening') {
+    // Check if has audio (either existing or being uploaded)
+    const hasAudio = form.audio_url || audioFile.value;
+    if (!hasAudio && !form.audio_file_name) {
+      alert("Bài test listening phải có file audio cho mỗi câu hỏi. Vui lòng tải lên file audio.");
+      return;
+    }
   }
 
   // Validate answers based on type
@@ -305,15 +361,29 @@ const onSave = () => {
 
   emit("save", {
     ...form,
+    // ✅ FIX: Only send actual audio_url (storage path), not blob://
+    // Remove preview URL before sending to backend
     _audioFile: audioFile.value,
     _removeAudio: removeAudioFlag.value,
+    _audioPreviewUrl: undefined, // Don't send preview URL to backend
   });
+  console.log('Question saved:', { noi_dung: form.noi_dung, diem_toi_da: form.diem_toi_da, answerCount: form.answers.length });
 };
 
 // Lifecycle
 onMounted(() => {
   if (props.question) {
-    Object.assign(form, props.question);
+    // ✅ FIX: Deep copy to preserve all properties including IDs
+    Object.assign(form, {
+      ...props.question,
+      // Ensure diem_toi_da is preserved or defaults to 1
+      diem_toi_da: props.question.diem_toi_da ?? props.question.diem_max ?? 1,
+      // Separate preview URL from storage URL
+      _audioPreviewUrl: props.question.audio_url && !props.question.audio_url.startsWith('blob:')
+        ? props.question.audio_url
+        : "",
+    });
+    console.log('Question loaded:', form);
   }
   initializeAnswers();
 });
@@ -343,5 +413,41 @@ onMounted(() => {
 
 .img-thumbnail {
   object-fit: cover;
+}
+
+/* Audio Upload Section */
+.audio-upload-section {
+  padding: 0;
+}
+
+.audio-preview {
+  max-width: 300px;
+  height: 32px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.audio-preview::-webkit-media-controls-panel {
+  background-color: #f8f9fa;
+}
+
+.audio-upload-section .form-control:disabled,
+.audio-upload-section .btn:disabled {
+  opacity: 0.6;
+}
+
+/* Audio file input styling */
+.audio-upload-section input[type="file"]::-webkit-file-upload-button {
+  background-color: #007bff;
+  color: white;
+  padding: 6px 16px;
+  border: none;
+  border-radius: 4px 0 0 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.audio-upload-section input[type="file"]::-webkit-file-upload-button:hover {
+  background-color: #0056b3;
 }
 </style>

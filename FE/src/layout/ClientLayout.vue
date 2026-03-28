@@ -8,37 +8,61 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarContent">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                        <li class="nav-item">
-                            <router-link class="nav-link" to="/">Trang chủ</router-link>
+                    <ul class="navbar-nav me-auto ms-lg-4 mb-2 mb-lg-0 align-items-center">
+                        <li class="nav-item px-2">
+                            <router-link class="nav-link fw-semibold" to="/">Trang chủ</router-link>
                         </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="testDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Bài Kiểm Tra
+                        <li class="nav-item dropdown px-2 position-relative">
+                            <a class="nav-link dropdown-toggle fw-semibold" href="#" role="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                Danh sách khóa học
                             </a>
-                            <ul class="dropdown-menu" aria-labelledby="testDropdown">
-                                <li v-for="test in availableTests" :key="test.testId">
-                                    <router-link class="dropdown-item" :to="`/tests/${test.testId}/take`">
-                                        {{ test.testName }}
-                                    </router-link>
+                            <ul class="dropdown-menu shadow-sm border-0 mt-2 dropdown-scrollable">
+                                <li v-if="isLoadingData" class="text-center py-2 text-muted small">
+                                    <span class="spinner-border spinner-border-sm me-2"></span> Đang tải...
                                 </li>
-                                <li v-if="availableTests.length === 0">
-                                    <span class="dropdown-item text-muted">Chưa có bài test</span>
+                                <li v-else v-for="course in availableCourses" :key="course.id">
+                                    <router-link class="dropdown-item py-2" :to="`/lessons/${course.id}`">{{
+                                        course.title }}</router-link>
+                                </li>
+                                <li v-if="!isLoadingData && availableCourses.length === 0">
+                                    <span class="dropdown-item py-2 text-muted small">Chưa có khóa học</span>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown px-2 position-relative">
+                            <a class="nav-link dropdown-toggle fw-semibold" href="#" role="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                Bài test
+                            </a>
+                            <ul class="dropdown-menu shadow-sm border-0 mt-2">
+                                <li v-if="isLoadingData" class="text-center py-2 text-muted small">
+                                    <span class="spinner-border spinner-border-sm me-2"></span> Đang tải...
+                                </li>
+                                <li v-else v-for="test in availableTests" :key="test.testId">
+                                    <router-link class="dropdown-item py-2" :to="`/test/${test.testId}`">{{
+                                        test.testName }}</router-link>
+                                </li>
+                                <li v-if="!isLoadingData && availableTests.length === 0">
+                                    <span class="dropdown-item py-2 text-muted small">Chưa có bài test</span>
                                 </li>
                             </ul>
                         </li>
                     </ul>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 ms-lg-4 mt-3 mt-lg-0">
                         <template v-if="authStore.isAuthenticated">
                             <span class="nav-link text-muted">{{ authStore.user?.name }}</span>
-                            <button class="btn btn-outline-danger btn-sm" @click="handleLogout" :disabled="isLoggingOut">
-                              <span v-if="isLoggingOut" class="spinner-border spinner-border-sm me-2"></span>
-                              {{ isLoggingOut ? "Đang xuất..." : "Đăng xuất" }}
+                            <button class="btn btn-outline-danger btn-sm px-3 rounded-pill" @click="handleLogout"
+                                :disabled="isLoggingOut">
+                                <span v-if="isLoggingOut" class="spinner-border spinner-border-sm me-2"></span>
+                                {{ isLoggingOut ? "Đang xuất..." : "Đăng xuất" }}
                             </button>
                         </template>
                         <template v-else>
-                            <router-link class="btn btn-outline-secondary" to="/login">Đăng nhập</router-link>
-                            <router-link class="btn btn-primary" to="/register">Đăng ký</router-link>
+                            <router-link class="btn btn-outline-secondary px-4 rounded-pill" to="/login">Đăng
+                                nhập</router-link>
+                            <router-link class="btn btn-primary px-4 rounded-pill shadow-sm" to="/register">Đăng
+                                ký</router-link>
                         </template>
                     </div>
                 </div>
@@ -65,29 +89,34 @@ import { useAuthStore } from '@/stores/auth';
 const router = useRouter();
 const authStore = useAuthStore();
 const availableTests = ref([]);
+const availableCourses = ref([]);
 const isLoggingOut = ref(false);
+const isLoadingData = ref(false);
 
 const handleLogout = async () => {
-  isLoggingOut.value = true;
-  try {
-    const result = await authStore.logout();
-    if (result.success) {
-      await router.push({ name: "Login" });
-    } else {
-      alert(result.message || "Đăng xuất thất bại");
+    isLoggingOut.value = true;
+    try {
+        const result = await authStore.logout();
+        if (result.success) {
+            await router.push({ name: "Login" });
+        } else {
+            alert(result.message || "Đăng xuất thất bại");
+        }
+    } catch (error) {
+        console.error("Logout error:", error);
+        alert("Đăng xuất bị lỗi");
+    } finally {
+        isLoggingOut.value = false;
     }
-  } catch (error) {
-    console.error("Logout error:", error);
-    alert("Đăng xuất bị lỗi");
-  } finally {
-    isLoggingOut.value = false;
-  }
 };
 
-const loadAvailableTests = async () => {
+const loadData = async () => {
+    isLoadingData.value = true;
     try {
         const lessonRes = await getLessons();
         const lessons = lessonRes.data || [];
+        availableCourses.value = lessons;
+
         for (const lesson of lessons) {
             const testRes = await getListByLesson(lesson.id);
             const tests = testRes.data || [];
@@ -102,12 +131,14 @@ const loadAvailableTests = async () => {
             }
         }
     } catch (error) {
-        console.error('Failed to load available tests', error);
+        console.error('Failed to load menu data', error);
+    } finally {
+        isLoadingData.value = false;
     }
 };
 
 onMounted(() => {
-    loadAvailableTests();
+    loadData();
 });
 
 // Removed goToTestPage logic because links are now rendered directly via router-link
@@ -116,5 +147,58 @@ onMounted(() => {
 <style scoped>
 .client-layout {
     background-color: #f8f9fa;
+}
+
+.navbar {
+    padding: 1rem 0;
+}
+
+.dropdown-menu {
+    animation: fadeIn 0.3s ease;
+}
+
+.dropdown-scrollable {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.dropdown-scrollable::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dropdown-scrollable::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.dropdown-scrollable::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.dropdown-scrollable::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.dropdown-item {
+    font-size: 0.95rem;
+    transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: rgba(252, 116, 221, 0.05);
+    color: #fc74dd;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 </style>

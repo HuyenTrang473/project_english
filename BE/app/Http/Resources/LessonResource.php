@@ -18,6 +18,7 @@ class LessonResource extends JsonResource
             'statusText' => $this->trang_thai === 2 ? 'Đã xuất bản' : 'Nháp',
             'isPublished' => $this->isPublished(),
             'isDraft' => $this->isDraft(),
+            'hinh_anh' => 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=500',
             'file' => $this->when($this->file_path, fn() => [
                 'path' => $this->file_path,
                 'type' => $this->file_type,

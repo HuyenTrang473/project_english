@@ -6,6 +6,8 @@ use App\Http\Requests\StoreLessonRequest;
 use App\Models\Lesson;
 use App\Http\Resources\LessonResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class LessonController extends Controller
 {
@@ -51,7 +53,7 @@ class LessonController extends Controller
             // - If draft: only owner (giáo viên) or admin can view
             $user = auth('sanctum')->user();
             $isOwner = $lesson->id_giao_vien === auth('sanctum')->id();
-            $isAdmin = $user && $user->isAdmin();
+            $isAdmin = $user && $user->role === 'admin';
             $isPublished = $lesson->trang_thai === 2;
 
             if (!$isPublished && !$isOwner && !$isAdmin) {
@@ -80,7 +82,7 @@ class LessonController extends Controller
     {
         try {
             // Log incoming request
-            \Log::info('LessonController::store - Request data:', [
+            Log::info('LessonController::store - Request data:', [
                 'tieu_de' => $request->tieu_de,
                 'mo_ta' => $request->mo_ta,
                 'noi_dung' => $request->noi_dung,
@@ -137,7 +139,7 @@ class LessonController extends Controller
             }
 
             $user = auth('sanctum')->user();
-            if ($lesson->id_giao_vien !== auth('sanctum')->id() && !($user && $user->isAdmin())) {
+            if ($lesson->id_giao_vien !== auth('sanctum')->id() && !($user && $user->role === 'admin')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền cập nhật bài học này',
@@ -154,8 +156,8 @@ class LessonController extends Controller
             // Handle file upload
             if ($request->hasFile('file')) {
                 // Delete old file if exists
-                if ($lesson->file_path && \Storage::disk('public')->exists($lesson->file_path)) {
-                    \Storage::disk('public')->delete($lesson->file_path);
+                if ($lesson->file_path && Storage::disk('public')->exists($lesson->file_path)) {
+                    Storage::disk('public')->delete($lesson->file_path);
                 }
 
                 $file = $request->file('file');
@@ -196,7 +198,7 @@ class LessonController extends Controller
             }
 
             $user = auth('sanctum')->user();
-            if ($lesson->id_giao_vien !== auth('sanctum')->id() && !($user && $user->isAdmin())) {
+            if ($lesson->id_giao_vien !== auth('sanctum')->id() && !($user && $user->role === 'admin')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền xóa bài học này',
@@ -223,7 +225,12 @@ class LessonController extends Controller
     public function myLessons(Request $request)
     {
         try {
-            $query = Lesson::where('id_giao_vien', auth('sanctum')->id());
+            $user = auth('sanctum')->user();
+            $query = Lesson::query();
+
+            if ($user && $user->role !== 'admin') {
+                $query->where('id_giao_vien', $user->id);
+            }
 
             // Filter by status if provided
             if ($request->has('status')) {
@@ -275,7 +282,7 @@ class LessonController extends Controller
 
             // Check authorization
             $user = auth('sanctum')->user();
-            if ($lesson->id_giao_vien !== auth('sanctum')->id() && !($user && $user->isAdmin())) {
+            if ($lesson->id_giao_vien !== auth('sanctum')->id() && !($user && $user->role === 'admin')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền xem bài học này',
@@ -398,7 +405,7 @@ class LessonController extends Controller
 
             // Check authorization
             $user = auth('sanctum')->user();
-            if ($lesson->id_giao_vien !== auth('sanctum')->id() && !($user && $user->isAdmin())) {
+            if ($lesson->id_giao_vien !== auth('sanctum')->id() && !($user && $user->role === 'admin')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền thay đổi trạng thái bài học này',

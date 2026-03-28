@@ -6,18 +6,10 @@
 
     <!-- Tab Navigation -->
     <div class="tabs">
-      <button
-        class="tab-button"
-        :class="{ active: activeTab === 'list' }"
-        @click="activeTab = 'list'"
-      >
+      <button class="tab-button" :class="{ active: activeTab === 'list' }" @click="activeTab = 'list'">
         Danh Sách Bài Thi
       </button>
-      <button
-        class="tab-button"
-        :class="{ active: activeTab === 'create' }"
-        @click="activeTab = 'create'"
-      >
+      <button class="tab-button" :class="{ active: activeTab === 'create' }" @click="activeTab = 'create'">
         Tạo Bài Thi Mới
       </button>
     </div>
@@ -29,12 +21,7 @@
         Chưa có bài thi nào. Bắt đầu bằng cách tạo bài thi mới!
       </div>
       <div v-else class="tests-list">
-        <div
-          v-for="test in tests"
-          :key="test.id"
-          class="test-card"
-          @click="editingTest = test; activeTab = 'create'"
-        >
+        <div v-for="test in tests" :key="test.id" class="test-card" @click="editingTest = test; activeTab = 'create'">
           <div class="test-card-header">
             <h3>{{ test.ten_bai_test }}</h3>
             <span :class="['status', `status-${test.trang_thai}`]">
@@ -44,21 +31,14 @@
           <p class="test-description">{{ test.mo_ta }}</p>
           <div class="test-meta">
             <span><strong>Loại:</strong> {{ getTestTypeLabel(test.loai_bai_test) }}</span>
-            <span><strong>Thời gian:</strong> {{ test.thoi_gian_lam_bai }} phút</span>
-            <span><strong>Điểm tối đa:</strong> {{ test.diem_toi_da }}</span>
+            <span><strong>Thời gian:</strong> {{ test.thoi_gian_toi_da }} phút</span>
+            <span><strong>Điểm tối đa:</strong> {{ test.diem_tong_max }}</span>
           </div>
           <div class="test-actions">
-            <button
-              class="btn-secondary"
-              @click.stop="viewQuestions(test)"
-            >
+            <button class="btn-secondary" @click.stop="viewQuestions(test)">
               Xem/Sửa Câu Hỏi ({{ test.questions_count || 0 }})
             </button>
-            <button
-              class="btn-danger"
-              @click.stop="deleteTest(test.id)"
-              :disabled="deleting"
-            >
+            <button class="btn-danger" @click.stop="deleteTest(test.id)" :disabled="deleting">
               Xóa
             </button>
           </div>
@@ -76,11 +56,7 @@
         <div class="questions-section">
           <h3>Câu Hỏi ({{ editingTest.cau_hois?.length || 0 }})</h3>
           <div v-if="!loadingQuestions" class="questions-list">
-            <div
-              v-for="(question, index) in editingTest.cau_hois"
-              :key="question.id"
-              class="question-item"
-            >
+            <div v-for="(question, index) in editingTest.cau_hois" :key="question.id" class="question-item">
               <div class="question-header">
                 <span class="question-number">Câu {{ index + 1 }}</span>
                 <span :class="['question-type', `type-${question.type}`]">
@@ -92,24 +68,14 @@
 
               <!-- Danh Sách Đáp Án -->
               <div class="answers-list">
-                <div
-                  v-for="answer in question.answers"
-                  :key="answer.id"
-                  class="answer-item"
-                  :class="{ correct: answer.isCorrect }"
-                >
+                <div v-for="answer in question.answers" :key="answer.id" class="answer-item"
+                  :class="{ correct: answer.isCorrect }">
                   <span class="answer-content">{{ answer.content }}</span>
                   <span v-if="answer.isCorrect" class="correct-badge">✓ Đúng</span>
-                  <button
-                    class="btn-edit-small"
-                    @click="editAnswer(question, answer)"
-                  >
+                  <button class="btn-edit-small" @click="editAnswer(question, answer)">
                     Sửa
                   </button>
-                  <button
-                    class="btn-delete-small"
-                    @click="deleteAnswer(editingTest.id, question.id, answer.id)"
-                  >
+                  <button class="btn-delete-small" @click="deleteAnswer(editingTest.id, question.id, answer.id)">
                     Xóa
                   </button>
                 </div>
@@ -117,12 +83,7 @@
 
               <!-- Thêm Đáp Án -->
               <form @submit.prevent="saveAnswer(question)" class="add-answer-form">
-                <input
-                  v-model="newAnswer.content"
-                  type="text"
-                  placeholder="Thêm đáp án..."
-                  required
-                />
+                <input v-model="newAnswer.content" type="text" placeholder="Thêm đáp án..." required />
                 <label class="checkbox">
                   <input v-model="newAnswer.isCorrect" type="checkbox" />
                   Đáp án đúng
@@ -131,16 +92,10 @@
               </form>
 
               <div class="question-actions">
-                <button
-                  class="btn-edit"
-                  @click="editQuestion(question)"
-                >
+                <button class="btn-edit" @click="editQuestion(question)">
                   Sửa Câu Hỏi
                 </button>
-                <button
-                  class="btn-danger"
-                  @click="deleteQuestion(editingTest.id, question.id)"
-                >
+                <button class="btn-danger" @click="deleteQuestion(editingTest.id, question.id)">
                   Xóa Câu
                 </button>
               </div>
@@ -152,11 +107,7 @@
             <h4>Thêm Câu Hỏi Mới</h4>
             <div class="form-group">
               <label>Nội dung câu hỏi</label>
-              <textarea
-                v-model="newQuestion.content"
-                placeholder="Nhập nội dung câu hỏi..."
-                required
-              ></textarea>
+              <textarea v-model="newQuestion.content" placeholder="Nhập nội dung câu hỏi..." required></textarea>
             </div>
             <div class="form-row">
               <div class="form-group">
@@ -169,13 +120,7 @@
               </div>
               <div class="form-group">
                 <label>Điểm tối đa</label>
-                <input
-                  v-model.number="newQuestion.maxScore"
-                  type="number"
-                  min="0.5"
-                  step="0.5"
-                  required
-                />
+                <input v-model.number="newQuestion.maxScore" type="number" min="0.5" step="0.5" required />
               </div>
             </div>
             <button type="submit" class="btn-primary">Thêm Câu Hỏi</button>
@@ -188,21 +133,12 @@
         <form @submit.prevent="saveTest">
           <div class="form-group">
             <label>Tên bài thi</label>
-            <input
-              v-model="formData.ten_bai_test"
-              type="text"
-              placeholder="VD: Unit 1 Midterm Test"
-              required
-            />
+            <input v-model="formData.ten_bai_test" type="text" placeholder="VD: Unit 1 Midterm Test" required />
           </div>
 
           <div class="form-group">
             <label>Mô tả</label>
-            <textarea
-              v-model="formData.mo_ta"
-              placeholder="Mô tả chi tiết về bài thi..."
-              required
-            ></textarea>
+            <textarea v-model="formData.mo_ta" placeholder="Mô tả chi tiết về bài thi..." required></textarea>
           </div>
 
           <div class="form-row">
@@ -230,29 +166,18 @@
           <div class="form-row">
             <div class="form-group">
               <label>Thời gian làm bài (phút)</label>
-              <input
-                v-model.number="formData.thoi_gian_lam_bai"
-                type="number"
-                min="1"
-                required
-              />
+              <input v-model.number="formData.thoi_gian_toi_da" type="number" min="1" required />
             </div>
 
             <div class="form-group">
               <label>Điểm tối đa</label>
-              <input
-                v-model.number="formData.diem_toi_da"
-                type="number"
-                min="1"
-                step="0.5"
-                required
-              />
+              <input v-model.number="formData.diem_tong_max" type="number" min="1" step="0.5" required />
             </div>
           </div>
 
           <div class="form-group checkbox">
             <label>
-              <input v-model="formData.trang_thai" type="checkbox" :true-value="1" :false-value="0" />
+              <input v-model.number="formData.trang_thai" type="checkbox" :true-value="2" :false-value="1" />
               Công khai bài thi
             </label>
           </div>
@@ -261,11 +186,7 @@
             <button type="submit" class="btn-primary" :disabled="submitting">
               {{ formMode === 'create' ? 'Tạo Bài Thi' : 'Cập Nhật' }}
             </button>
-            <button
-              type="button"
-              class="btn-secondary"
-              @click="resetForm"
-            >
+            <button type="button" class="btn-secondary" @click="resetForm">
               Hủy
             </button>
           </div>
@@ -321,9 +242,9 @@ export default {
         mo_ta: "",
         id_lesson: "",
         loai_bai_test: 1,
-        thoi_gian_lam_bai: 45,
-        diem_toi_da: 100,
-        trang_thai: 0,
+        thoi_gian_toi_da: 45,
+        diem_tong_max: 100,
+        trang_thai: 1,
       },
     };
   },
@@ -504,14 +425,14 @@ export default {
         mo_ta: "",
         id_lesson: "",
         loai_bai_test: 1,
-        thoi_gian_lam_bai: 45,
-        diem_toi_da: 100,
-        trang_thai: 0,
+        thoi_gian_toi_da: 45,
+        diem_tong_max: 100,
+        trang_thai: 1,
       };
     },
 
     getStatusLabel(status) {
-      const labels = { 0: "Nháp", 1: "Công khai", 2: "Khoá" };
+      const labels = { 1: "Nháp", 2: "Công khai" };
       return labels[status] || "Không xác định";
     },
 

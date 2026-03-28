@@ -32,160 +32,161 @@
           </div>
           <div class="card-body">
             <fieldset :disabled="isView">
-            <!-- Lesson Selection -->
-            <div class="mb-3">
-              <label class="form-label">Bài Học <span class="text-danger">*</span></label>
-              <select v-model="form.id_lesson" :class="['form-select', { 'is-invalid': formErrors.id_lesson }]">
-                <option value="">-- Chọn bài học --</option>
-                <option v-for="lesson in lessons" :key="lesson.id" :value="lesson.id">
-                  {{ lesson.tieu_de }}
-                </option>
-              </select>
-              <div v-if="formErrors.id_lesson" class="invalid-feedback d-block">
-                {{ formErrors.id_lesson }}
-              </div>
-            </div>
-
-            <!-- Lesson Content Display -->
-            <div v-if="selectedLesson" class="alert alert-info mb-3">
-              <div class="d-flex align-items-start">
-                <div class="me-3">
-                  <i class="fa fa-book fa-2x text-info"></i>
-                </div>
-                <div class="flex-grow-1">
-                  <h6 class="mb-2">📖 {{ selectedLesson.tieu_de }}</h6>
-                  <p class="mb-1 small" v-if="selectedLesson.mo_ta">
-                    <strong>Nội dung:</strong> {{ selectedLesson.mo_ta }}
-                  </p>
-                  <p class="mb-0 small text-muted" v-if="selectedLesson.loai_bai_hoc">
-                    <strong>Loại:</strong> {{ selectedLesson.loai_bai_hoc }}
-                  </p>
+              <!-- Lesson Selection -->
+              <div class="mb-3">
+                <label class="form-label">Bài Học <span class="text-danger">*</span></label>
+                <select v-model="form.id_lesson" :class="['form-select', { 'is-invalid': formErrors.id_lesson }]">
+                  <option value="">-- Chọn bài học --</option>
+                  <option v-for="lesson in lessons" :key="lesson.id" :value="lesson.id">
+                    {{ lesson.tieu_de }}
+                  </option>
+                </select>
+                <div v-if="formErrors.id_lesson" class="invalid-feedback d-block">
+                  {{ formErrors.id_lesson }}
                 </div>
               </div>
-            </div>
 
-            <!-- Quiz Type Selection -->
-            <div class="mb-3">
-              <label class="form-label">Loại Quiz <span class="text-danger">*</span></label>
-              <select v-model="form.loai_quiz" class="form-select">
-                <option value="listening">🎧 Listening (Nghe)</option>
-                <option value="writing">✍️ Writing (Viết)</option>
-                <option value="reading">📖 Reading (Đọc)</option>
-                <option value="mixed">🎯 Mixed (Hỗn Hợp - Test Năng Lực)</option>
-              </select>
-              <small class="form-text text-muted">
-                Chọn loại quiz để tổ chức câu hỏi một cách hợp lý
-              </small>
-            </div>
-
-            <!-- Quiz Type Details -->
-            <div v-if="form.loai_quiz" class="mb-3">
-              <label class="form-label">Mô Tả Chi Tiết Loại Quiz</label>
-              <textarea v-model="form.chi_tiet_loai_quiz" class="form-control" rows="2"
-                :placeholder="getQuizTypeDescription(form.loai_quiz)"></textarea>
-            </div>
-
-            <!-- Test Name -->
-            <div class="mb-3">
-              <label class="form-label">Tên Bài Test <span class="text-danger">*</span></label>
-              <input v-model="form.ten_bai_test" type="text"
-                :class="['form-control', { 'is-invalid': formErrors.ten_bai_test }]" placeholder="Nhập tên bài test">
-              <div v-if="formErrors.ten_bai_test" class="invalid-feedback d-block">
-                {{ formErrors.ten_bai_test }}
-              </div>
-            </div>
-
-            <!-- Description -->
-            <div class="mb-3">
-              <label class="form-label">Mô Tả</label>
-              <textarea v-model="form.mo_ta" class="form-control" rows="3"
-                placeholder="Nhập mô tả cho bài test"></textarea>
-            </div>
-
-            <!-- Test Configuration Row 1 -->
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Thời Gian Tối Đa (phút) <span class="text-danger">*</span></label>
-                <input v-model.number="form.thoi_gian_toi_da" type="number"
-                  :class="['form-control', { 'is-invalid': formErrors.thoi_gian_toi_da }]" min="1" placeholder="60">
-                <div v-if="formErrors.thoi_gian_toi_da" class="invalid-feedback d-block">
-                  {{ formErrors.thoi_gian_toi_da }}
+              <!-- Lesson Content Display -->
+              <div v-if="selectedLesson" class="alert alert-info mb-3">
+                <div class="d-flex align-items-start">
+                  <div class="me-3">
+                    <i class="fa fa-book fa-2x text-info"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <h6 class="mb-2">📖 {{ selectedLesson.tieu_de }}</h6>
+                    <p class="mb-1 small" v-if="selectedLesson.mo_ta">
+                      <strong>Nội dung:</strong> {{ selectedLesson.mo_ta }}
+                    </p>
+                    <p class="mb-0 small text-muted" v-if="selectedLesson.loai_bai_hoc">
+                      <strong>Loại:</strong> {{ selectedLesson.loai_bai_hoc }}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Điểm Tối Đa <span class="text-danger">*</span></label>
-                <input v-model.number="form.diem_tong_max" type="number"
-                  :class="['form-control', { 'is-invalid': formErrors.diem_tong_max }]" min="1" placeholder="100">
-                <div v-if="formErrors.diem_tong_max" class="invalid-feedback d-block">
-                  {{ formErrors.diem_tong_max }}
-                </div>
-              </div>
-            </div>
 
-            <!-- Test Configuration Row 2 -->
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Số Lần Làm Tối Đa</label>
-                <input v-model.number="form.so_lan_lam_toi_da" type="number" class="form-control" min="1"
-                  placeholder="3">
+              <!-- Quiz Type Selection -->
+              <div class="mb-3">
+                <label class="form-label">Loại Quiz <span class="text-danger">*</span></label>
+                <select v-model="form.loai_quiz" class="form-select">
+                  <option value="listening">🎧 Listening (Nghe)</option>
+                  <option value="writing">✍️ Writing (Viết)</option>
+                  <option value="reading">📖 Reading (Đọc)</option>
+                  <option value="mixed">🎯 Mixed (Hỗn Hợp - Test Năng Lực)</option>
+                </select>
+                <small class="form-text text-muted">
+                  Chọn loại quiz để tổ chức câu hỏi một cách hợp lý
+                </small>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Điểm Đạt (để pass)</label>
-                <input v-model.number="form.diem_dat" type="number" class="form-control" placeholder="60">
-              </div>
-            </div>
 
-            <!-- Checkboxes -->
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <div class="form-check">
-                  <input v-model="form.co_xao_tron_cau_hoi" type="checkbox" class="form-check-input"
-                    id="shuffleQuestions">
-                  <label class="form-check-label" for="shuffleQuestions">
-                    Trộn Lẫn Câu Hỏi
-                  </label>
-                </div>
+              <!-- Quiz Type Details -->
+              <div v-if="form.loai_quiz" class="mb-3">
+                <label class="form-label">Mô Tả Chi Tiết Loại Quiz</label>
+                <textarea v-model="form.chi_tiet_loai_quiz" class="form-control" rows="2"
+                  :placeholder="getQuizTypeDescription(form.loai_quiz)"></textarea>
               </div>
-              <div class="col-md-6 mb-3">
-                <div class="form-check">
-                  <input v-model="form.co_xao_tron_dap_an" type="checkbox" class="form-check-input" id="shuffleAnswers">
-                  <label class="form-check-label" for="shuffleAnswers">
-                    Trộn Lẫn Đáp Án
-                  </label>
-                </div>
-              </div>
-            </div>
 
-            <!-- Results Display -->
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <div class="form-check">
-                  <input v-model="form.hien_thi_ket_qua_ngay_lap" type="checkbox" class="form-check-input"
-                    id="showResultsImmediately">
-                  <label class="form-check-label" for="showResultsImmediately">
-                    Hiển Thị Kết Quả Ngay Lập Tức
-                  </label>
+              <!-- Test Name -->
+              <div class="mb-3">
+                <label class="form-label">Tên Bài Test <span class="text-danger">*</span></label>
+                <input v-model="form.ten_bai_test" type="text"
+                  :class="['form-control', { 'is-invalid': formErrors.ten_bai_test }]" placeholder="Nhập tên bài test">
+                <div v-if="formErrors.ten_bai_test" class="invalid-feedback d-block">
+                  {{ formErrors.ten_bai_test }}
                 </div>
               </div>
-              <div class="col-md-6 mb-3">
-                <div class="form-check">
-                  <input v-model="form.hien_thi_dap_an_dung" type="checkbox" class="form-check-input"
-                    id="showCorrectAnswers">
-                  <label class="form-check-label" for="showCorrectAnswers">
-                    Hiển Thị Đáp Án Đúng
-                  </label>
-                </div>
-              </div>
-            </div>
 
-            <!-- Status -->
-            <div class="mb-3">
-              <label class="form-label">Trạng Thái</label>
-              <select v-model.number="form.trang_thai" class="form-select">
-                <option :value="1">🗒️ Nháp</option>
-                <option :value="2">📢 Công Bố</option>
-              </select>
-            </div>
+              <!-- Description -->
+              <div class="mb-3">
+                <label class="form-label">Mô Tả</label>
+                <textarea v-model="form.mo_ta" class="form-control" rows="3"
+                  placeholder="Nhập mô tả cho bài test"></textarea>
+              </div>
+
+              <!-- Test Configuration Row 1 -->
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Thời Gian Tối Đa (phút) <span class="text-danger">*</span></label>
+                  <input v-model.number="form.thoi_gian_toi_da" type="number"
+                    :class="['form-control', { 'is-invalid': formErrors.thoi_gian_toi_da }]" min="1" placeholder="60">
+                  <div v-if="formErrors.thoi_gian_toi_da" class="invalid-feedback d-block">
+                    {{ formErrors.thoi_gian_toi_da }}
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Điểm Tối Đa <span class="text-danger">*</span></label>
+                  <input v-model.number="form.diem_tong_max" type="number"
+                    :class="['form-control', { 'is-invalid': formErrors.diem_tong_max }]" min="1" placeholder="100">
+                  <div v-if="formErrors.diem_tong_max" class="invalid-feedback d-block">
+                    {{ formErrors.diem_tong_max }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Test Configuration Row 2 -->
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Số Lần Làm Tối Đa</label>
+                  <input v-model.number="form.so_lan_lam_toi_da" type="number" class="form-control" min="1"
+                    placeholder="3">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Điểm Đạt (để pass)</label>
+                  <input v-model.number="form.diem_dat" type="number" class="form-control" placeholder="60">
+                </div>
+              </div>
+
+              <!-- Checkboxes -->
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <div class="form-check">
+                    <input v-model="form.co_xao_tron_cau_hoi" type="checkbox" class="form-check-input"
+                      id="shuffleQuestions">
+                    <label class="form-check-label" for="shuffleQuestions">
+                      Trộn Lẫn Câu Hỏi
+                    </label>
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <div class="form-check">
+                    <input v-model="form.co_xao_tron_dap_an" type="checkbox" class="form-check-input"
+                      id="shuffleAnswers">
+                    <label class="form-check-label" for="shuffleAnswers">
+                      Trộn Lẫn Đáp Án
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Results Display -->
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <div class="form-check">
+                    <input v-model="form.hien_thi_ket_qua_ngay_lap" type="checkbox" class="form-check-input"
+                      id="showResultsImmediately">
+                    <label class="form-check-label" for="showResultsImmediately">
+                      Hiển Thị Kết Quả Ngay Lập Tức
+                    </label>
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <div class="form-check">
+                    <input v-model="form.hien_thi_dap_an_dung" type="checkbox" class="form-check-input"
+                      id="showCorrectAnswers">
+                    <label class="form-check-label" for="showCorrectAnswers">
+                      Hiển Thị Đáp Án Đúng
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Status -->
+              <div class="mb-3">
+                <label class="form-label">Trạng Thái</label>
+                <select v-model.number="form.trang_thai" class="form-select">
+                  <option :value="1">🗒️ Nháp</option>
+                  <option :value="2">📢 Công Bố</option>
+                </select>
+              </div>
             </fieldset>
           </div>
         </div>
@@ -460,7 +461,17 @@ const onSubmit = async () => {
     // Add questions with audio file handling
     const questionsForSubmit = questions.value.map((q, index) => {
       // Extract audio file and audio remove flag if present
-      const { _audioFile, _removeAudio, ...questionData } = q;
+      const { _audioFile, _removeAudio, _audioPreviewUrl, ...questionData } = q;
+
+      // Remove blob:// URLs before sending to backend
+      if (questionData.audio_url && questionData.audio_url.startsWith('blob:')) {
+        questionData.audio_url = '';
+      }
+
+      // Ensure diem_toi_da (point value) is included
+      if (!questionData.diem_toi_da && !questionData.diem_max) {
+        questionData.diem_toi_da = 1;
+      }
 
       // Append audio file to FormData if present
       if (_audioFile) {
@@ -476,6 +487,7 @@ const onSubmit = async () => {
     });
 
     formData.append('questions', JSON.stringify(questionsForSubmit));
+    console.log('Submitting questions:', questionsForSubmit);
 
     if (isEdit.value) {
       await testStore.updateTest(editTestId.value, formData);
