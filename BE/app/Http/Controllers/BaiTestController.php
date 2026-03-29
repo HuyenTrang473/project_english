@@ -688,7 +688,7 @@ class BaiTestController extends Controller
             if ($test->so_lan_lam_toi_da > 0) {
                 $attemptCount = StudentTestResult::where('id_hoc_sinh', $userId)
                     ->where('id_bai_test', $testId)
-                    ->whereIn('trang_thai', ['completed', 'pending_review', 'grading'])
+                    ->whereIn('trang_thai', ['completed', 'pending_review', 'grading', 'expired'])
                     ->count();
 
                 if ($attemptCount >= $test->so_lan_lam_toi_da) {
@@ -704,6 +704,21 @@ class BaiTestController extends Controller
                 ->where('id_bai_test', $testId)
                 ->where('trang_thai', 'in_progress')
                 ->first();
+
+            // Nếu attempt cũ đã quá giờ thì đóng attempt đó và tạo attempt mới
+            if ($result && $test->thoi_gian_toi_da > 0 && $result->thoi_gian_bat_dau) {
+                $maxSeconds = $test->thoi_gian_toi_da * 60;
+                $elapsedSeconds = max(0, $result->thoi_gian_bat_dau->diffInSeconds(now(), false));
+
+                if ($elapsedSeconds >= $maxSeconds) {
+                    $result->update([
+                        'trang_thai' => 'expired',
+                        'thoi_gian_hoan_thanh' => now(),
+                        'thoi_gian_su_dung' => $maxSeconds,
+                    ]);
+                    $result = null;
+                }
+            }
 
             if (!$result) {
                 // Tính lan_thu (attempt number)
@@ -721,6 +736,14 @@ class BaiTestController extends Controller
                 ]);
             }
 
+            $elapsedSeconds = 0;
+            if ($result->thoi_gian_bat_dau) {
+                $elapsedSeconds = max(0, $result->thoi_gian_bat_dau->diffInSeconds(now(), false));
+            }
+            $remainingSeconds = $test->thoi_gian_toi_da > 0
+                ? max(($test->thoi_gian_toi_da * 60) - $elapsedSeconds, 0)
+                : null;
+
             return response()->json([
                 'success' => true,
                 'message' => 'Bắt đầu làm bài test',
@@ -731,6 +754,7 @@ class BaiTestController extends Controller
                     'trang_thai' => $result->trang_thai,
                     'thoi_gian_bat_dau' => $result->thoi_gian_bat_dau,
                     'thoi_gian_toi_da' => $test->thoi_gian_toi_da,
+                    'thoi_gian_con_lai' => $remainingSeconds,
                 ],
             ], 200);
         } catch (\Exception $e) {
@@ -773,10 +797,18 @@ class BaiTestController extends Controller
 
             // Kiểm tra thời gian giới hạn
             if ($test->thoi_gian_toi_da > 0) {
-                $elapsedSeconds = $result->thoi_gian_bat_dau->diffInSeconds(now());
+                $elapsedSeconds = $result->thoi_gian_bat_dau
+                    ? max(0, $result->thoi_gian_bat_dau->diffInSeconds(now(), false))
+                    : 0;
                 $maxSeconds = $test->thoi_gian_toi_da * 60; // Convert to seconds
 
                 if ($elapsedSeconds > $maxSeconds) {
+                    $result->update([
+                        'trang_thai' => 'expired',
+                        'thoi_gian_hoan_thanh' => now(),
+                        'thoi_gian_su_dung' => $maxSeconds,
+                    ]);
+
                     return response()->json([
                         'success' => false,
                         'message' => 'Thời gian làm bài đã hết',
@@ -835,7 +867,9 @@ class BaiTestController extends Controller
                 }
 
                 // Calculate time used
-                $timeUsed = $result->thoi_gian_bat_dau->diffInSeconds(now());
+                $timeUsed = $result->thoi_gian_bat_dau
+                    ? max(0, $result->thoi_gian_bat_dau->diffInSeconds(now(), false))
+                    : 0;
 
                 // Update StudentTestResult
                 $result->update([
@@ -891,6 +925,9 @@ class BaiTestController extends Controller
             $userId = auth('sanctum')->id();
             $result = StudentTestResult::where('id_hoc_sinh', $userId)
                 ->where('id_bai_test', $testId)
+                ->whereIn('trang_thai', ['completed', 'pending_review', 'grading'])
+                ->orderByDesc('thoi_gian_hoan_thanh')
+                ->orderByDesc('id')
                 ->first();
 
             if (!$result || !in_array($result->trang_thai, ['completed', 'pending_review', 'grading'])) {

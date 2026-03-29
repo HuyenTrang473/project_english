@@ -1,6 +1,6 @@
 <template>
   <div class="lesson-detail-container">
-    <router-link to="/lessons" class="btn btn-back">← Quay Lại</router-link>
+    <router-link :to="backRoute" class="btn btn-back">← Quay Lại</router-link>
 
     <div v-if="loading" class="loading">Đang tải...</div>
 
@@ -33,7 +33,7 @@
             <div class="file-info">
               <strong>📁 {{ getFileName(lesson.file.path) }}</strong>
               <span class="file-meta">{{ formatFileSize(lesson.file.size) }} • {{ lesson.file.type.toUpperCase()
-                }}</span>
+              }}</span>
             </div>
             <a :href="lesson.file.url" download :title="`Tải ${getFileName(lesson.file.path)}`"
               class="btn btn-download">
@@ -79,6 +79,11 @@ export default {
       loading: false,
       error: null,
     };
+  },
+  computed: {
+    backRoute() {
+      return this.$route.query.from === "home" ? "/" : "/lessons";
+    },
   },
   methods: {
     async loadLesson(lessonId) {

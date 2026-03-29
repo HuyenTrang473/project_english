@@ -87,6 +87,16 @@ const navigateToRegister = () => {
     router.push('/register');
 };
 
+const goToCourseDetail = (courseId) => {
+    if (!courseId) {
+        return;
+    }
+    router.push({
+        path: `/lessons/${courseId}`,
+        query: { from: 'home' },
+    });
+};
+
 const handleImageError = (event) => {
     event.target.src = 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=500';
 };
@@ -323,7 +333,7 @@ onMounted(() => {
                                         'Pending' }}</span>
                                 </div>
                                 <button class="btn btn-primary w-100 rounded-pill fw-semibold shadow-sm py-2"
-                                    @click="navigateToRegister">Register Now</button>
+                                    @click="goToCourseDetail(course.id)">View Course</button>
                             </div>
                         </div>
                     </div>

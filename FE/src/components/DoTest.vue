@@ -78,6 +78,7 @@ const formattedTime = computed(() => {
 });
 
 const startTimerCountdown = () => {
+  if (timerInterval) clearInterval(timerInterval);
   timerInterval = setInterval(() => {
     if (timeLeft.value > 0) {
       timeLeft.value--;
@@ -126,7 +127,20 @@ const loadTest = async () => {
     resetAudioState();
 
     // Register the test attempt
-    await startTest(testId.value);
+    const startRes = await startTest(testId.value);
+    const startPayload = startRes?.data ?? startRes;
+    const attemptData = startPayload?.data ?? {};
+
+    if (typeof attemptData.thoi_gian_con_lai === 'number') {
+      timeLeft.value = Math.max(0, attemptData.thoi_gian_con_lai);
+    } else if (attemptData.thoi_gian_bat_dau && attemptData.thoi_gian_toi_da) {
+      const startedAt = new Date(attemptData.thoi_gian_bat_dau).getTime();
+      const nowMs = Date.now();
+      const elapsedSeconds = Math.max(0, Math.floor((nowMs - startedAt) / 1000));
+      const maxSeconds = Number(attemptData.thoi_gian_toi_da) * 60;
+      timeLeft.value = Math.max(0, maxSeconds - elapsedSeconds);
+    }
+
     startTimerCountdown();
   } catch (err) {
     const msg = err.response?.data?.message || err.message;
@@ -241,8 +255,9 @@ const handleSubmit = async () => {
       id_dap_an: q.userAnswer,
     }));
     const res = await submitTestApi(testId.value, payload);
-    alert('Hoàn thành! Điểm của bạn: ' + (res.data?.diem_tong ?? 'Chưa chấm'));
-    router.push('/');
+    const score = res?.data?.diem_tong ?? res?.diem_tong ?? 'Chưa chấm';
+    alert('Hoàn thành! Điểm của bạn: ' + score);
+    router.push({ name: 'TestResult', params: { id: testId.value } });
   } catch (err) {
     alert('Lỗi khi nộp bài: ' + (err.response?.data?.message || err.message));
   } finally {
@@ -274,7 +289,7 @@ const gridColumns = computed(() => {
 
     <!-- Error State -->
     <div v-else-if="error" class="error-screen">
-      <h2>⚠️ Không thể tải bài test</h2>
+      <h2><i class="fa-solid fa-triangle-exclamation icon-inline" aria-hidden="true"></i> Không thể tải bài test</h2>
       <p>{{ error }}</p>
       <button class="nav-btn primary" @click="router.push('/')">Về trang chủ</button>
     </div>
@@ -297,7 +312,7 @@ const gridColumns = computed(() => {
         <!-- Left Sidebar (Question Grid) -->
         <aside class="sidebar">
           <div class="timer-display">
-            <span class="timer-icon">⏱️</span>
+            <span class="timer-icon"><i class="fa-regular fa-clock" aria-hidden="true"></i></span>
             {{ formattedTime }}
           </div>
 
@@ -328,7 +343,7 @@ const gridColumns = computed(() => {
                 <div v-if="questions[currentQuestionIndex].audio_url" class="audio-player-container">
                   <!-- Audio Header -->
                   <div class="audio-header">
-                    <div class="audio-icon">🎧</div>
+                    <div class="audio-icon"><i class="fa-solid fa-headphones" aria-hidden="true"></i></div>
                     <div class="audio-info">
                       <h4>Phần Nghe</h4>
                       <p v-if="questions[currentQuestionIndex].audio_file_name" class="audio-filename">
@@ -351,14 +366,14 @@ const gridColumns = computed(() => {
                   <!-- Custom Controls -->
                   <div class="audio-controls">
                     <button @click="playAudio" class="audio-btn-play" :disabled="isPlayingAudio">
-                      <span v-if="!isPlayingAudio">▶️ Phát</span>
-                      <span v-else>⏸️ Dừng</span>
+                      <span v-if="!isPlayingAudio"><i class="fa-solid fa-play" aria-hidden="true"></i> Phát</span>
+                      <span v-else><i class="fa-solid fa-pause" aria-hidden="true"></i> Dừng</span>
                     </button>
                     <button @click="stopAudio" class="audio-btn-stop">
-                      ⏹️ Dừng Lại
+                      <i class="fa-solid fa-stop" aria-hidden="true"></i> Dừng Lại
                     </button>
                     <button @click="playAudio" class="audio-btn-repeat" title="Phát Lại">
-                      🔁 Phát Lại
+                      <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Phát Lại
                     </button>
                     <div class="audio-duration" v-if="audioDuration">
                       {{ formatTime(audioCurrentTime) }} / {{ formatTime(audioDuration) }}
@@ -370,16 +385,20 @@ const gridColumns = computed(() => {
                     <input v-if="audioDuration" type="range" :value="audioCurrentTime" :max="audioDuration"
                       @input="seekAudio" class="progress-slider">
                     <div v-else class="progress-loading">
-                      ⏳ Đang tải âm thanh...
+                      <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Đang tải âm thanh...
                     </div>
                   </div>
 
                   <!-- Audio Status -->
                   <div class="audio-status">
-                    <span v-if="audioLoading" class="status-badge loading">⏳ Đang tải...</span>
-                    <span v-else-if="audioError" class="status-badge error">❌ Không thể tải</span>
-                    <span v-else-if="isPlayingAudio" class="status-badge playing">🔊 Đang phát</span>
-                    <span v-else class="status-badge ready">✓ Sẵn sàng</span>
+                    <span v-if="audioLoading" class="status-badge loading"><i class="fa-solid fa-hourglass-half"
+                        aria-hidden="true"></i> Đang tải...</span>
+                    <span v-else-if="audioError" class="status-badge error"><i class="fa-solid fa-circle-xmark"
+                        aria-hidden="true"></i> Không thể tải</span>
+                    <span v-else-if="isPlayingAudio" class="status-badge playing"><i class="fa-solid fa-volume-high"
+                        aria-hidden="true"></i> Đang phát</span>
+                    <span v-else class="status-badge ready"><i class="fa-solid fa-check" aria-hidden="true"></i> Sẵn
+                      sàng</span>
                   </div>
                 </div>
 
@@ -451,6 +470,10 @@ const gridColumns = computed(() => {
   justify-content: center;
   height: 100vh;
   gap: 1rem;
+}
+
+.icon-inline {
+  margin-right: 0.35rem;
 }
 
 .spinner {
@@ -801,6 +824,12 @@ const gridColumns = computed(() => {
 .audio-icon {
   font-size: 2rem;
   animation: bounce 2s infinite;
+}
+
+.audio-controls button i,
+.progress-loading i,
+.status-badge i {
+  margin-right: 0.35rem;
 }
 
 @keyframes bounce {

@@ -4,7 +4,7 @@
         <div class="manager-header">
             <h3>Quản lý Đề thi</h3>
             <button class="btn btn-primary" @click="openCreateDialog">
-                <span class="icon">+</span> Tạo mới đề thi
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> Tạo mới đề thi
             </button>
         </div>
 
@@ -18,7 +18,7 @@
                 <option value="2">Đã xuất bản</option>
             </select>
             <button class="btn btn-secondary" @click="loadTests">
-                <span class="icon">🔄</span> Tải lại
+                <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Tải lại
             </button>
         </div>
 
@@ -64,13 +64,13 @@
                         <td class="date-cell">{{ formatDate(test.created_at) }}</td>
                         <td class="actions-cell">
                             <button class="btn btn-sm btn-primary" @click="viewTest(test.id)" title="Xem">
-                                👁️
+                                <i class="fa-regular fa-eye" aria-hidden="true"></i>
                             </button>
                             <button class="btn btn-sm btn-info" @click="openEditDialog(test)" title="Chỉnh sửa">
-                                ✏️
+                                <i class="fa-solid fa-pen" aria-hidden="true"></i>
                             </button>
                             <button class="btn btn-sm btn-danger" @click="deleteTest(test.id)" title="Xóa">
-                                🗑️
+                                <i class="fa-solid fa-trash" aria-hidden="true"></i>
                             </button>
                         </td>
                     </tr>
@@ -616,6 +616,14 @@ export default {
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.2s;
+}
+
+.btn i {
+    margin-right: 0.35rem;
+}
+
+.actions-cell .btn i {
+    margin-right: 0;
 }
 
 .btn-primary {

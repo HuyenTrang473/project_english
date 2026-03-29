@@ -2,23 +2,21 @@
   <div class="teacher-manager">
     <!-- Controls -->
     <div class="controls-bar">
-      <input
-        v-model="searchQuery"
-        type="text"
-        placeholder="🔍 Tìm kiếm giáo viên..."
-        class="search-input"
-      />
+      <div class="search-field">
+        <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+        <input v-model="searchQuery" type="text" placeholder="Tìm kiếm giáo viên..." class="search-input" />
+      </div>
       <button @click="showAddForm = true" class="btn btn-primary">
-        ➕ Thêm Giáo Viên
+        <i class="fa-solid fa-plus" aria-hidden="true"></i> Thêm Giáo Viên
       </button>
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="loading">⏳ Đang tải...</div>
+    <div v-if="loading" class="loading"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Đang tải...</div>
 
     <!-- Error Message -->
     <div v-if="error" class="error-message">
-      ⚠️ {{ error }}
+      <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{ error }}
     </div>
 
     <!-- Teachers Table -->
@@ -41,16 +39,21 @@
             <td>{{ teacher.email }}</td>
             <td>
               <span :class="teacher.active ? 'status-active' : 'status-inactive'">
-                {{ teacher.active ? '✅ Hoạt động' : '⏸️ Vô hiệu' }}
+                <template v-if="teacher.active">
+                  <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Hoạt động
+                </template>
+                <template v-else>
+                  <i class="fa-solid fa-circle-pause" aria-hidden="true"></i> Vô hiệu
+                </template>
               </span>
             </td>
             <td>{{ teacher.lessonCount || 0 }} bài</td>
             <td>
               <button @click="editTeacher(teacher)" class="btn btn-sm btn-edit">
-                ✏️ Sửa
+                <i class="fa-solid fa-pen" aria-hidden="true"></i> Sửa
               </button>
               <button @click="deleteTeacher(teacher.id)" class="btn btn-sm btn-delete">
-                🗑️ Xóa
+                <i class="fa-solid fa-trash" aria-hidden="true"></i> Xóa
               </button>
             </td>
           </tr>
@@ -67,7 +70,10 @@
     <div v-if="showAddForm" class="modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>{{ editingTeacher ? '✏️ Chỉnh Sửa Giáo Viên' : '➕ Thêm Giáo Viên Mới' }}</h3>
+          <h3>
+            <i :class="editingTeacher ? 'fa-solid fa-pen' : 'fa-solid fa-plus'" aria-hidden="true"></i>
+            {{ editingTeacher ? 'Chỉnh Sửa Giáo Viên' : 'Thêm Giáo Viên Mới' }}
+          </h3>
           <button @click="closeForm" class="btn-close">✕</button>
         </div>
 
@@ -90,17 +96,17 @@
           <div class="form-group">
             <label>
               <input v-model="formData.active" type="checkbox" />
-              ✅ Hoạt động
+              <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Hoạt động
             </label>
           </div>
         </div>
 
         <div class="modal-footer">
           <button @click="closeForm" class="btn btn-secondary">
-            ❌ Hủy
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i> Hủy
           </button>
           <button @click="saveTeacher" class="btn btn-primary">
-            💾 Lưu
+            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Lưu
           </button>
         </div>
       </div>
@@ -132,7 +138,7 @@ export default {
   computed: {
     filteredTeachers() {
       if (!this.searchQuery) return this.teachers;
-      
+
       const query = this.searchQuery.toLowerCase();
       return this.teachers.filter(
         teacher =>
@@ -151,7 +157,7 @@ export default {
 
       try {
         const response = await http.get('/admin/teachers');
-        
+
         if (response && response.success) {
           this.teachers = response.data || [];
         } else {
@@ -273,10 +279,24 @@ export default {
   flex-wrap: wrap;
 }
 
-.search-input {
+.search-field {
+  position: relative;
   flex: 1;
   min-width: 250px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.search-input {
+  width: 100%;
   padding: 10px 15px;
+  padding-left: 34px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   font-size: 14px;
@@ -460,6 +480,16 @@ export default {
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s;
+}
+
+.btn i,
+.loading i,
+.error-message i,
+.status-active i,
+.status-inactive i,
+.modal-header h3 i,
+.form-group label i {
+  margin-right: 0.35rem;
 }
 
 .btn-primary {

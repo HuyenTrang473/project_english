@@ -3,12 +3,12 @@
         <!-- Sidebar -->
         <aside class="admin-sidebar">
             <div class="sidebar-brand">
-                <h4>🎓 Admin Panel</h4>
+                <h4><i class="fa-solid fa-user-graduate nav-title-icon" aria-hidden="true"></i>Admin Panel</h4>
             </div>
             <nav class="sidebar-nav">
                 <a v-for="item in menuItems" :key="item.key" href="#" class="nav-link"
                     :class="{ active: activeMenu === item.key }" @click.prevent="handleMenuClick(item)">
-                    <span class="nav-icon">{{ item.icon }}</span>
+                    <span class="nav-icon"><i :class="item.icon" aria-hidden="true"></i></span>
                     {{ item.label }}
                 </a>
             </nav>
@@ -24,28 +24,31 @@
                 <!-- Dashboard -->
                 <div v-if="activeMenu === 'dashboard'" class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-icon bg-primary">📚</div>
+                        <div class="stat-icon bg-primary"><i class="fa-solid fa-book" aria-hidden="true"></i></div>
                         <div class="stat-info">
                             <span class="stat-value">{{ stats.lessons }}</span>
                             <span class="stat-label">Bài học</span>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon bg-success">📝</div>
+                        <div class="stat-icon bg-success"><i class="fa-solid fa-file-lines" aria-hidden="true"></i>
+                        </div>
                         <div class="stat-info">
                             <span class="stat-value">{{ stats.tests }}</span>
                             <span class="stat-label">Đề thi</span>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon bg-info">👩‍🏫</div>
+                        <div class="stat-icon bg-info"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i>
+                        </div>
                         <div class="stat-info">
                             <span class="stat-value">{{ stats.teachers }}</span>
                             <span class="stat-label">Giáo viên</span>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon bg-warning">👨‍🎓</div>
+                        <div class="stat-icon bg-warning"><i class="fa-solid fa-user-graduate" aria-hidden="true"></i>
+                        </div>
                         <div class="stat-info">
                             <span class="stat-value">{{ stats.students }}</span>
                             <span class="stat-label">Học sinh</span>
@@ -92,10 +95,10 @@ export default {
         return {
             activeMenu: 'dashboard',
             allMenuItems: [
-                { key: 'dashboard', label: 'Dashboard', icon: '🏠', route: null, adminOnly: false },
-                { key: 'lessons', label: 'Quản lý Bài học', icon: '📚', route: '/lessons', adminOnly: false },
-                { key: 'tests', label: 'Quản lý Đề thi', icon: '📝', route: '/tests', adminOnly: false },
-                { key: 'teachers', label: 'Quản lý Giáo viên', icon: '👨‍🏫', route: null, adminOnly: true },
+                { key: 'dashboard', label: 'Dashboard', icon: 'fa-solid fa-gauge-high', route: null, adminOnly: false },
+                { key: 'lessons', label: 'Quản lý Bài học', icon: 'fa-solid fa-book', route: '/lessons', adminOnly: false },
+                { key: 'tests', label: 'Quản lý Đề thi', icon: 'fa-solid fa-file-lines', route: '/tests', adminOnly: false },
+                { key: 'teachers', label: 'Quản lý Giáo viên', icon: 'fa-solid fa-chalkboard-user', route: null, adminOnly: true },
             ],
             stats: {
                 lessons: 0,
@@ -180,6 +183,10 @@ export default {
 .sidebar-brand h4 {
     margin: 0;
     font-size: 1.15rem;
+}
+
+.nav-title-icon {
+    margin-right: 0.45rem;
 }
 
 .sidebar-nav {

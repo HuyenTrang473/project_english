@@ -39,7 +39,8 @@
 						<a class="nav-link" href="/lessons">
 							<div class="parent-icon"><i class="fa-solid fa-book"></i>
 							</div>
-							<div class="menu-title">📚 Quản Lý Bài Học</div>
+							<div class="menu-title"><i class="fa-solid fa-book me-2" aria-hidden="true"></i>Quản Lý Bài
+								Học</div>
 						</a>
 					</router-link>
 				</li>
