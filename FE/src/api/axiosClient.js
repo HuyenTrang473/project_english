@@ -54,7 +54,7 @@ http.interceptors.response.use(
   function (error) {
     const status = error.response?.status;
     const url = error.config?.url || "";
-    const isAuthAction = /\/login$|\/register$/.test(url);
+    const isAuthAction = /\/login$|\/login\/google$|\/register$/.test(url);
     const hasToken = !!normalizeToken(localStorage.getItem("token"));
 
     if (status === 401 && hasToken && !isAuthAction) {

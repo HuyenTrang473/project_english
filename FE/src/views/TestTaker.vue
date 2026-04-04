@@ -27,11 +27,7 @@
 
       <!-- Questions Form -->
       <form @submit.prevent="onSubmitTest">
-        <div 
-          v-for="(question, questionIndex) in shuffledQuestions"
-          :key="question.id"
-          class="card mb-3"
-        >
+        <div v-for="(question, questionIndex) in shuffledQuestions" :key="question.id" class="card mb-3">
           <!-- Question Header -->
           <div class="card-header bg-info text-white">
             <h5 class="mb-0">
@@ -44,33 +40,21 @@
             <!-- Question Content -->
             <div class="mb-3">
               <h6 class="mb-2">{{ question.noi_dung }}</h6>
-              <img 
-                v-if="question.hinh_anh_url"
-                :src="question.hinh_anh_url"
-                class="img-fluid mb-3"
-                style="max-width: 400px"
-              >
+              
+              <div v-if="question.audio_url" class="mt-2 mb-3">
+                <audio controls :src="question.audio_url" class="w-100" style="max-width: 400px; height: 40px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></audio>
+              </div>
+
+              <img v-if="question.hinh_anh_url" :src="question.hinh_anh_url" class="img-fluid mb-3 rounded shadow-sm"
+                style="max-width: 400px; max-height: 250px;">
             </div>
 
             <!-- Answers - Multiple Choice -->
             <div v-if="question.loai_cau_hoi === 'multiple_choice'" class="mb-3">
-              <div 
-                v-for="(answer, index) in question.answers"
-                :key="index"
-                class="form-check mb-2"
-              >
-                <input 
-                  :id="`answer_${questionIndex}_${index}`"
-                  v-model="studentAnswers[questionIndex]"
-                  :value="answer.id || index"
-                  type="radio" 
-                  class="form-check-input"
-                  :name="`question_${questionIndex}`"
-                >
-                <label 
-                  :for="`answer_${questionIndex}_${index}`"
-                  class="form-check-label"
-                >
+              <div v-for="(answer, index) in question.answers" :key="index" class="form-check mb-2">
+                <input :id="`answer_${questionIndex}_${index}`" v-model="studentAnswers[questionIndex]"
+                  :value="answer.id || index" type="radio" class="form-check-input" :name="`question_${questionIndex}`">
+                <label :for="`answer_${questionIndex}_${index}`" class="form-check-label">
                   {{ answer.noi_dung }}
                 </label>
               </div>
@@ -79,29 +63,17 @@
             <!-- Answers - True/False -->
             <div v-else-if="question.loai_cau_hoi === 'true_false'" class="mb-3">
               <div class="form-check mb-2">
-                <input 
-                  :id="`true_${questionIndex}`"
-                  v-model="studentAnswers[questionIndex]"
-                  value="true"
-                  type="radio" 
-                  class="form-check-input"
-                  :name="`question_tf_${questionIndex}`"
-                >
+                <input :id="`true_${questionIndex}`" v-model="studentAnswers[questionIndex]" value="true" type="radio"
+                  class="form-check-input" :name="`question_tf_${questionIndex}`">
                 <label :for="`true_${questionIndex}`" class="form-check-label">
-                  ✓ Đúng
+                  <i class="fa fa-check"></i> Đúng
                 </label>
               </div>
               <div class="form-check">
-                <input 
-                  :id="`false_${questionIndex}`"
-                  v-model="studentAnswers[questionIndex]"
-                  value="false"
-                  type="radio" 
-                  class="form-check-input"
-                  :name="`question_tf_${questionIndex}`"
-                >
+                <input :id="`false_${questionIndex}`" v-model="studentAnswers[questionIndex]" value="false" type="radio"
+                  class="form-check-input" :name="`question_tf_${questionIndex}`">
                 <label :for="`false_${questionIndex}`" class="form-check-label">
-                  ✗ Sai
+                  <i class="fa fa-times"></i> Sai
                 </label>
               </div>
             </div>
@@ -109,30 +81,17 @@
             <!-- Answers - Image Choice -->
             <div v-else-if="question.loai_cau_hoi === 'image_choice'" class="mb-3">
               <div class="row">
-                <div 
-                  v-for="(answer, index) in question.answers"
-                  :key="index"
-                  class="col-md-4 mb-2"
-                >
+                <div v-for="(answer, index) in question.answers" :key="index" class="col-md-4 mb-2">
                   <label class="position-relative">
-                    <input 
-                      :id="`img_answer_${questionIndex}_${index}`"
-                      v-model="studentAnswers[questionIndex]"
-                      :value="answer.id || index"
-                      type="radio" 
-                      class="form-check-input position-absolute"
-                      style="top: 10px; left: 10px;"
-                    >
-                    <img 
-                      :src="answer.hinh_anh_url"
-                      class="img-thumbnail w-100 cursor-pointer"
-                      style="cursor: pointer;"
+                    <input :id="`img_answer_${questionIndex}_${index}`" v-model="studentAnswers[questionIndex]"
+                      :value="answer.id || index" type="radio" class="form-check-input position-absolute"
+                      style="top: 10px; left: 10px;">
+                    <img :src="answer.hinh_anh_url" class="img-thumbnail w-100 cursor-pointer" style="cursor: pointer;"
                       :style="{
-                        border: studentAnswers[questionIndex] === String(answer.id || index) 
-                          ? '3px solid #007bff' 
+                        border: studentAnswers[questionIndex] === String(answer.id || index)
+                          ? '3px solid #007bff'
                           : '1px solid #ddd'
-                      }"
-                    >
+                      }">
                   </label>
                 </div>
               </div>
@@ -143,31 +102,16 @@
               <div class="row">
                 <div class="col-md-6">
                   <h6>Cột Trái</h6>
-                  <div 
-                    v-for="(item, index) in question.answers"
-                    :key="`left_${index}`"
-                    class="mb-2"
-                  >
+                  <div v-for="(item, index) in question.answers" :key="`left_${index}`" class="mb-2">
                     <span class="badge bg-secondary">{{ item.trai }}</span>
                   </div>
                 </div>
                 <div class="col-md-6">
                   <h6>Ghép Vào Cột Phải</h6>
-                  <div 
-                    v-for="(item, index) in question.answers"
-                    :key="`right_${index}`"
-                    class="mb-2"
-                  >
-                    <select 
-                      v-model="studentAnswers[questionIndex][index]"
-                      class="form-select form-select-sm"
-                    >
+                  <div v-for="(item, index) in question.answers" :key="`right_${index}`" class="mb-2">
+                    <select v-model="studentAnswers[questionIndex][index]" class="form-select form-select-sm">
                       <option value="">-- Chọn --</option>
-                      <option 
-                        v-for="(answer, idx) in question.answers"
-                        :key="`opt_${idx}`"
-                        :value="idx"
-                      >
+                      <option v-for="(answer, idx) in question.answers" :key="`opt_${idx}`" :value="idx">
                         {{ answer.phai }}
                       </option>
                     </select>
@@ -178,22 +122,14 @@
 
             <!-- Answers - Fill Blank -->
             <div v-else-if="question.loai_cau_hoi === 'fill_blank'" class="mb-3">
-              <input 
-                v-model="studentAnswers[questionIndex]"
-                type="text" 
-                class="form-control"
-                placeholder="Nhập câu trả lời"
-              >
+              <input v-model="studentAnswers[questionIndex]" type="text" class="form-control"
+                placeholder="Nhập câu trả lời">
             </div>
 
             <!-- Answers - Essay -->
             <div v-else-if="question.loai_cau_hoi === 'essay'" class="mb-3">
-              <textarea 
-                v-model="studentAnswers[questionIndex]"
-                class="form-control"
-                rows="4"
-                placeholder="Viết câu trả lời của bạn tại đây..."
-              ></textarea>
+              <textarea v-model="studentAnswers[questionIndex]" class="form-control" rows="4"
+                placeholder="Viết câu trả lời của bạn tại đây..."></textarea>
             </div>
 
             <!-- Question Description -->
@@ -207,11 +143,7 @@
 
         <!-- Submit Button -->
         <div class="d-grid gap-2 mb-4">
-          <button 
-            type="submit"
-            class="btn btn-lg btn-success"
-            :disabled="loading"
-          >
+          <button type="submit" class="btn btn-lg btn-success" :disabled="loading">
             <i class="fa fa-check"></i> Nộp Bài Test
           </button>
         </div>
@@ -220,12 +152,9 @@
 
     <!-- Success State -->
     <div v-else class="alert alert-success text-center py-5">
-      <h2>✓ Nộp Bài Thành Công!</h2>
+      <h2><i class="fa fa-check-circle"></i> Nộp Bài Thành Công!</h2>
       <p class="mb-0 mt-3">Bài test của bạn đã được ghi nhận. Hãy xem kết quả của bạn.</p>
-      <router-link 
-        :to="`/tests/${testId}/result`"
-        class="btn btn-primary mt-3"
-      >
+      <router-link :to="`/tests/${testId}/result`" class="btn btn-primary mt-3">
         Xem Kết Quả
       </router-link>
     </div>

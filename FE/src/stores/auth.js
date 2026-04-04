@@ -64,6 +64,12 @@ export const useAuthStore = defineStore("auth", () => {
     return response;
   }
 
+  async function loginWithGoogle(credential) {
+    const response = await http.post("/login/google", { credential });
+    setAuth(response.user, response.access_token);
+    return response;
+  }
+
   async function register(payload) {
     const response = await http.post("/register", payload);
     setAuth(response.user, response.access_token);
@@ -133,6 +139,7 @@ export const useAuthStore = defineStore("auth", () => {
     setAuth,
     clearAuth,
     login,
+    loginWithGoogle,
     register,
     logout,
     fetchUser,

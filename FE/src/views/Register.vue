@@ -31,6 +31,11 @@
                     </div>
                     <button type="submit" class="btn btn-primary w-100">Tạo tài khoản</button>
                 </form>
+
+                <div class="text-center my-3 text-muted">hoặc</div>
+                <button type="button" class="btn btn-outline-dark w-100 mb-3" @click="handleGoogleRegisterRedirect">
+                    <i class="fa-brands fa-google me-2"></i> Đăng ký bằng Google
+                </button>
                 <p class="mt-3 text-center">
                     Đã có tài khoản?
                     <router-link to="/login">Đăng nhập</router-link>
@@ -71,5 +76,10 @@ const handleSubmit = async () => {
     } catch (e) {
         errors.api = 'Đăng ký thất bại, vui lòng thử lại.';
     }
+};
+
+const handleGoogleRegisterRedirect = () => {
+    const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api').replace(/\/$/, '');
+    window.location.href = `${base}/auth/google/redirect`;
 };
 </script>

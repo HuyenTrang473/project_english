@@ -1,27 +1,22 @@
 <template>
   <div class="lesson-container">
     <div class="lesson-header">
-      <h1>📚 Quản Lý Bài Học</h1>
+      <h1><i class="fa fa-book"></i> Quản Lý Bài Học</h1>
       <div class="header-buttons">
         <router-link to="/admin" class="btn-back">← Quay Lại</router-link>
         <router-link v-if="isTeacher" to="/lessons/create" class="btn btn-primary">
-          ➕ Tạo Bài Học Mới
+          <i class="fa fa-plus-circle"></i> Tạo Bài Học Mới
         </router-link>
       </div>
     </div>
 
     <!-- Search & Filter -->
     <div class="search-section">
-      <input
-        v-model="searchQuery"
-        type="text"
-        placeholder="🔍 Tìm kiếm bài học..."
-        class="search-input"
-      />
+      <input v-model="searchQuery" type="text" placeholder="Tìm kiếm bài học..." class="search-input" />
       <select v-if="isTeacher" v-model="selectedStatus" class="status-select">
-        <option value="">📋 Tất cả trạng thái</option>
-        <option value="1">📝 Nháp</option>
-        <option value="2">✅ Đã xuất bản</option>
+        <option value="">Tất cả trạng thái</option>
+        <option value="1">Nháp</option>
+        <option value="2">Đã xuất bản</option>
       </select>
     </div>
 
@@ -30,7 +25,7 @@
 
     <!-- Error State -->
     <div v-if="error" class="error-message">
-      ⚠️ {{ error }}
+      <i class="fa fa-exclamation-triangle"></i> {{ error }}
     </div>
 
     <!-- Lessons Grid -->
@@ -46,37 +41,28 @@
         <p class="lesson-description">{{ lesson.description }}</p>
 
         <div class="lesson-meta">
-          <small>👨‍🏫 {{ lesson.teacher?.name || 'Unknown' }}</small>
-          <small>📅 {{ formatDate(lesson.createdAt) }}</small>
+          <small><i class="fa fa-user"></i> {{ lesson.teacher?.name || 'Unknown' }}</small>
+          <small><i class="fa fa-calendar"></i> {{ formatDate(lesson.createdAt) }}</small>
         </div>
 
         <div class="lesson-actions">
           <router-link :to="`/lessons/${lesson.id}`" class="btn btn-sm btn-view">
-            👁️ Xem
+            <i class="fa fa-eye"></i> Xem
           </router-link>
 
-          <router-link
-            v-if="isTeacher && isOwner(lesson)"
-            :to="`/lessons/${lesson.id}/edit`"
-            class="btn btn-sm btn-edit"
-          >
-            ✏️ Sửa
+          <router-link v-if="isTeacher && isOwner(lesson)" :to="`/lessons/${lesson.id}/edit`"
+            class="btn btn-sm btn-edit">
+            <i class="fa fa-pencil"></i> Sửa
           </router-link>
 
-          <button
-            v-if="isTeacher && isOwner(lesson)"
-            @click="toggleStatus(lesson.id)"
-            :class="`btn btn-sm btn-${lesson.status === 2 ? 'unpublish' : 'publish'}`"
-          >
-            {{ lesson.status === 2 ? '🔒 Giấu' : '🔓 Xuất bản' }}
+          <button v-if="isTeacher && isOwner(lesson)" @click="toggleStatus(lesson.id)"
+            :class="`btn btn-sm btn-${lesson.status === 2 ? 'unpublish' : 'publish'}`">
+            <i :class="lesson.status === 2 ? 'fa fa-lock' : 'fa fa-unlock'"></i>
+            {{ lesson.status === 2 ? ' Giấu' : ' Xuất bản' }}
           </button>
 
-          <button
-            v-if="isTeacher && isOwner(lesson)"
-            @click="deleteLesson(lesson.id)"
-            class="btn btn-sm btn-delete"
-          >
-            🗑️ Xóa
+          <button v-if="isTeacher && isOwner(lesson)" @click="deleteLesson(lesson.id)" class="btn btn-sm btn-delete">
+            <i class="fa fa-trash"></i> Xóa
           </button>
         </div>
       </div>
@@ -84,7 +70,7 @@
 
     <!-- Empty State -->
     <div v-if="!loading && lessons.length === 0" class="empty-state">
-      <p>📭 Không có bài học nào</p>
+      <p><i class="fa fa-inbox"></i> Không có bài học nào</p>
     </div>
   </div>
 </template>
@@ -136,7 +122,7 @@ export default {
       try {
         let response;
         console.log('Loading lessons... isTeacher:', this.isTeacher, 'authenticated:', this.authStore.isAuthenticated);
-        
+
         if (this.isTeacher) {
           // Teachers see all their lessons (draft + published)
           try {
@@ -153,7 +139,7 @@ export default {
         }
 
         console.log('Response:', response);
-        
+
         if (response) {
           if (response.success) {
             this.lessons = response.data || [];

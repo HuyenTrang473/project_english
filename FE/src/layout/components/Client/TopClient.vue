@@ -45,10 +45,16 @@
                         <ul class="dropdown-menu shadow-sm border-0 p-2" style="min-width: 280px;">
                             <template v-if="Object.keys(groupedTests).length > 0">
                                 <template v-for="(group, key, index) in groupedTests" :key="key">
-                                    <li v-if="index > 0"><hr class="dropdown-divider"></li>
-                                    <li><h6 class="dropdown-header fw-bold text-primary px-3 fs-6">{{ group.label }}</h6></li>
+                                    <li v-if="index > 0">
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                    <li>
+                                        <h6 class="dropdown-header fw-bold text-primary px-3 fs-6">{{ group.label }}
+                                        </h6>
+                                    </li>
                                     <li v-for="test in group.tests" :key="test.testId">
-                                        <router-link class="dropdown-item rounded py-2 px-3 fw-medium" :to="`/test/${test.testId}`">
+                                        <router-link class="dropdown-item rounded py-2 px-3 fw-medium"
+                                            :to="`/test/${test.testId}`">
                                             {{ test.testName }}
                                         </router-link>
                                     </li>
@@ -81,9 +87,10 @@
                 <div class="d-flex gap-2">
                     <template v-if="authStore.isAuthenticated">
                         <span class="nav-link text-muted d-flex align-items-center">{{ authStore.user?.name }}</span>
-                        <button class="btn btn-outline-danger btn-sm rounded-pill px-4" @click="handleLogout" :disabled="isLoggingOut">
-                          <span v-if="isLoggingOut" class="spinner-border spinner-border-sm me-2"></span>
-                          {{ isLoggingOut ? 'Đang xuất...' : 'Đăng xuất' }}
+                        <button class="btn btn-outline-danger btn-sm rounded-pill px-4" @click="handleLogout"
+                            :disabled="isLoggingOut">
+                            <span v-if="isLoggingOut" class="spinner-border spinner-border-sm me-2"></span>
+                            {{ isLoggingOut ? 'Đang xuất...' : 'Đăng xuất' }}
                         </button>
                     </template>
                     <template v-else>
@@ -117,11 +124,11 @@ export default {
 
         const groupedTests = computed(() => {
             const groups = {
-                listening: { label: '🎧 Nghe (Listening)', tests: [] },
-                reading: { label: '📖 Đọc (Reading)', tests: [] },
-                writing: { label: '✍️ Viết (Writing)', tests: [] },
-                mixed: { label: '🎯 Hỗn Hợp (Mixed)', tests: [] },
-                other: { label: '📋 Khác', tests: [] }
+                listening: { label: 'Nghe (Listening)', tests: [] },
+                reading: { label: 'Đọc (Reading)', tests: [] },
+                writing: { label: 'Viết (Writing)', tests: [] },
+                mixed: { label: 'Hỗn Hợp (Mixed)', tests: [] },
+                other: { label: 'Khác', tests: [] }
             };
 
             availableTests.value.forEach(test => {

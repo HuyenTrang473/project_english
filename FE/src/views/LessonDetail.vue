@@ -4,7 +4,7 @@
 
     <div v-if="loading" class="loading">Đang tải...</div>
 
-    <div v-if="error" class="error-message">⚠️ {{ error }}</div>
+    <div v-if="error" class="error-message"><i class="fa fa-exclamation-triangle"></i> {{ error }}</div>
 
     <div v-if="lesson && !loading" class="lesson-detail">
       <div class="lesson-detail-header">
@@ -15,46 +15,46 @@
           </span>
         </div>
         <div class="teacher-info">
-          <strong>👨‍🏫 Giáo viên:</strong> {{ lesson.teacher?.name }}<br />
-          <strong>📧 Email:</strong> {{ lesson.teacher?.email }}<br />
-          <small>📅 {{ formatDate(lesson.createdAt) }}</small>
+          <strong><i class="fa fa-user"></i> Giáo viên:</strong> {{ lesson.teacher?.name }}<br />
+          <strong><i class="fa fa-envelope"></i> Email:</strong> {{ lesson.teacher?.email }}<br />
+          <small><i class="fa fa-calendar"></i> {{ formatDate(lesson.createdAt) }}</small>
         </div>
       </div>
 
       <div class="lesson-content">
         <section v-if="lesson.description" class="section">
-          <h2>📌 Mô Tả</h2>
+          <h2><i class="fa fa-thumb-tack"></i> Mô Tả</h2>
           <p>{{ lesson.description }}</p>
         </section>
 
         <section v-if="lesson.file && lesson.file.url" class="section">
-          <h2>📎 Tệp Đính Kèm</h2>
+          <h2><i class="fa fa-paperclip"></i> Tệp Đính Kèm</h2>
           <div class="file-section">
             <div class="file-info">
-              <strong>📁 {{ getFileName(lesson.file.path) }}</strong>
+              <strong><i class="fa fa-folder"></i> {{ getFileName(lesson.file.path) }}</strong>
               <span class="file-meta">{{ formatFileSize(lesson.file.size) }} • {{ lesson.file.type.toUpperCase()
               }}</span>
             </div>
             <a :href="lesson.file.url" download :title="`Tải ${getFileName(lesson.file.path)}`"
               class="btn btn-download">
-              ⬇️ Tải File
+              <i class="fa fa-download"></i> Tải File
             </a>
           </div>
         </section>
 
         <section class="section">
-          <h2>📖 Nội Dung</h2>
+          <h2><i class="fa fa-book"></i> Nội Dung</h2>
           <div class="content-text">{{ lesson.content }}</div>
         </section>
 
         <section class="section">
-          <h2>📝 Bài Kiểm Tra Liên Quan</h2>
+          <h2><i class="fa fa-pencil"></i> Bài Kiểm Tra Liên Quan</h2>
           <div v-if="tests.length > 0" class="tests-list">
             <div v-for="test in tests" :key="test.id" class="test-item">
-              <strong>📋 {{ test.ten_bai_test }}</strong>
+              <strong><i class="fa fa-list-alt"></i> {{ test.ten_bai_test }}</strong>
               <p>{{ test.mo_ta }}</p>
               <router-link :to="`/test/${test.id}`" class="btn btn-sm btn-primary">
-                ➤ Làm Bài
+                <i class="fa fa-play"></i> Làm Bài
               </router-link>
             </div>
           </div>

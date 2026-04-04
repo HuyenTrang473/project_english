@@ -20,6 +20,12 @@ const routes = [
     component: () => import("@/views/auth/Register.vue"),
     meta: { layout: "client", guest: true },
   },
+  {
+    path: "/auth/google/callback",
+    name: "GoogleCallback",
+    component: () => import("@/views/auth/GoogleCallback.vue"),
+    meta: { layout: "client", guest: true },
+  },
   // Admin Routes
   {
     path: "/admin",

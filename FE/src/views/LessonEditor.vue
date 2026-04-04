@@ -1,7 +1,10 @@
 <template>
   <div class="lesson-editor-container">
     <div class="lesson-editor-header">
-      <h1>{{ isEdit ? "✏️ Chỉnh Sửa Bài Học" : "➕ Tạo Bài Học Mới" }}</h1>
+      <h1>
+        <i :class="isEdit ? 'fa fa-pencil' : 'fa fa-plus-circle'"></i>
+        {{ isEdit ? " Chỉnh Sửa Bài Học" : " Tạo Bài Học Mới" }}
+      </h1>
       <router-link to="/lessons" class="btn btn-secondary">← Quay Lại</router-link>
     </div>
 
@@ -32,39 +35,41 @@
       <div class="form-group">
         <label for="status">Trạng Thái *</label>
         <select id="status" v-model.number="form.trang_thai" required>
-          <option value="1">📝 Nháp (Draft)</option>
-          <option value="2">✅ Xuất Bản (Published)</option>
+          <option value="1">Nháp (Draft)</option>
+          <option value="2">Xuất Bản (Published)</option>
         </select>
       </div>
 
       <!-- File Upload -->
       <div class="form-group">
-        <label for="file">📎 Tải File (PDF, DOC, DOCX, TXT - tối đa 10MB)</label>
+        <label for="file"><i class="fa fa-paperclip"></i> Tải File (PDF, DOC, DOCX, TXT - tối đa 10MB)</label>
         <input id="file" type="file" @change="handleFileChange" accept=".pdf,.doc,.docx,.txt" />
         <small v-if="form.file" class="file-info">
-          ✓ File: {{ form.file.name }} ({{ formatFileSize(form.file.size) }})
+          <i class="fa fa-check"></i> File: {{ form.file.name }} ({{ formatFileSize(form.file.size) }})
         </small>
         <small v-if="existingFile" class="file-info" style="color: #666;">
-          📁 File hiện tại: {{ existingFile.name }} ({{ formatFileSize(existingFile.size) }})
+          <i class="fa fa-folder-open"></i> File hiện tại: {{ existingFile.name }} ({{ formatFileSize(existingFile.size)
+          }})
         </small>
       </div>
 
       <!-- Error Message -->
       <div v-if="error" class="error-message">
-        ⚠️ {{ error }}
+        <i class="fa fa-exclamation-triangle"></i> {{ error }}
       </div>
 
       <!-- Success Message -->
       <div v-if="success" class="success-message">
-        ✅ {{ success }}
+        <i class="fa fa-check-circle"></i> {{ success }}
       </div>
 
       <!-- Form Actions -->
       <div class="form-actions">
         <button type="submit" class="btn btn-primary" :disabled="loading">
-          {{ loading ? "Đang lưu..." : "💾 Lưu Bài Học" }}
+          <span v-if="loading">Đang lưu...</span>
+          <span v-else><i class="fa fa-floppy-o"></i> Lưu Bài Học</span>
         </button>
-        <router-link to="/lessons" class="btn btn-secondary">❌ Hủy</router-link>
+        <router-link to="/lessons" class="btn btn-secondary"><i class="fa fa-times-circle"></i> Hủy</router-link>
       </div>
     </form>
   </div>
@@ -165,7 +170,7 @@ export default {
         }
 
         // DEBUG: Log FormData contents
-        console.log("📤 FormData being sent:");
+        console.log("FormData being sent:");
         for (let [key, value] of formData.entries()) {
           if (value instanceof File) {
             console.log(`  ${key}: [File] ${value.name} (${value.size} bytes, type: ${value.type})`);
@@ -180,7 +185,7 @@ export default {
           response = await lessonApi.updateLesson(this.$route.params.id, formData);
           this.success = "Cập nhật bài học thành công!";
         } else {
-          console.log("➕ Creating new lesson");
+          console.log("Creating new lesson");
           response = await lessonApi.createLesson(formData);
           this.success = "Tạo bài học thành công!";
         }
@@ -195,7 +200,7 @@ export default {
         }
       } catch (err) {
         this.error = err.message || "Lỗi khi lưu bài học";
-        console.error("❌ Error saving lesson:", err);
+        console.error("Error saving lesson:", err);
 
         // DEBUG: Log full error response
         if (err.response) {
@@ -206,7 +211,7 @@ export default {
         // DEBUG: Log validation errors if present
         if (err.response?.status === 422) {
           const errors = err.response.data?.errors || err.response.data;
-          console.error("❌ Validation errors object:", errors);
+          console.error("Validation errors object:", errors);
 
           // Format error messages for display
           if (errors && typeof errors === 'object') {

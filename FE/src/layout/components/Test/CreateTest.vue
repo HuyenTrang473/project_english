@@ -1,6 +1,6 @@
 <template>
     <div class="container my-4">
-        <h2 class="text-primary mb-4">👨‍🏫 Tạo bài test mới</h2>
+        <h2 class="text-primary mb-4"><i class="fa fa-user"></i> Tạo bài test mới</h2>
 
         <input v-model="test.title" class="form-control mb-3" placeholder="Tên bài test" />
 
@@ -23,11 +23,11 @@
         </div>
 
         <button class="btn btn-secondary me-2" @click="addQuestion">
-            ➕ Thêm câu hỏi
+            <i class="fa fa-plus-circle"></i> Thêm câu hỏi
         </button>
 
         <button class="btn btn-primary" @click="saveTest">
-            💾 Lưu bài test
+            <i class="fa fa-floppy-o"></i> Lưu bài test
         </button>
     </div>
 </template>

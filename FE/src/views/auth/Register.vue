@@ -32,6 +32,14 @@
                                 </button>
                             </div>
 
+                            <div class="text-center my-3 text-muted small">hoặc</div>
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-outline-dark" :disabled="loading"
+                                    @click="handleGoogleRegisterRedirect">
+                                    Đăng ký với Google
+                                </button>
+                            </div>
+
                             <!-- Display Errors Dynamically -->
                             <div v-if="apiError"
                                 class="alert alert-danger mt-3 mb-0 small rounded-3 border-0 shadow-sm py-2">
@@ -71,6 +79,18 @@ const passwordMismatch = computed(() => {
     return form.value.password && confirmPassword.value && form.value.password !== confirmPassword.value;
 });
 
+const extractErrorMessage = (error) => {
+    const data = error?.response?.data;
+    if (data?.errors) {
+        const firstKey = Object.keys(data.errors)[0];
+        return data.errors[firstKey]?.[0] || 'Dữ liệu không hợp lệ.';
+    }
+    if (data?.message) {
+        return data.message;
+    }
+    return 'Đăng ký thất bại do kết nối máy chủ.';
+};
+
 const handleRegister = async () => {
     if (passwordMismatch.value) return;
 
@@ -85,18 +105,14 @@ const handleRegister = async () => {
         const redirectPath = router.currentRoute.value.query.redirect || authStore.defaultRouteByRole;
         router.push(redirectPath);
     } catch (error) {
-        let errorMsg = 'Đăng ký thất bại do kết nối máy chủ.';
-        if (error.response && error.response.data) {
-            if (error.response.data.errors) {
-                const firstKey = Object.keys(error.response.data.errors)[0];
-                errorMsg = error.response.data.errors[firstKey][0];
-            } else if (error.response.data.message) {
-                errorMsg = error.response.data.message;
-            }
-        }
-        apiError.value = errorMsg;
+        apiError.value = extractErrorMessage(error);
     } finally {
         loading.value = false;
     }
+};
+
+const handleGoogleRegisterRedirect = () => {
+    const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api').replace(/\/$/, '');
+    window.location.href = `${base}/auth/google/redirect`;
 };
 </script>

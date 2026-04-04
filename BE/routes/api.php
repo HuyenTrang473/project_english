@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['throttle:5,1'])->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login/google', [AuthController::class, 'googleLogin']);
+    Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
+    Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 });
 
 // ============ Auth Routes (Protected) ============

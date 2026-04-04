@@ -9,7 +9,7 @@
 
     <!-- Error State -->
     <div v-else-if="error" class="alert alert-danger text-center">
-      <h4>⚠️ {{ error }}</h4>
+      <h4><i class="fa fa-exclamation-triangle"></i> {{ error }}</h4>
       <router-link to="/" class="btn btn-primary mt-3">Về trang chủ</router-link>
     </div>
 
@@ -17,7 +17,7 @@
     <div v-else>
       <!-- Header -->
       <div class="text-center mb-5">
-        <h1>📊 Kết Quả Bài Test</h1>
+        <h1><i class="fa fa-bar-chart"></i> Kết Quả Bài Test</h1>
       </div>
 
       <!-- Score Card -->
@@ -30,24 +30,20 @@
               </h2>
               <h5 class="text-muted mb-3">Điểm Của Bạn</h5>
               <div class="progress mb-3" style="height: 25px;">
-                <div 
-                  class="progress-bar"
-                  :style="{ 
-                    width: scorePercentage + '%',
-                    backgroundColor: scoreColor
-                  }"
-                >
+                <div class="progress-bar" :style="{
+                  width: scorePercentage + '%',
+                  backgroundColor: scoreColor
+                }">
                   {{ scorePercentage }}%
                 </div>
               </div>
               <p class="mb-0">
-                <span 
-                  :class="[
-                    'badge badge-lg',
-                    isPassed ? 'bg-success' : 'bg-danger'
-                  ]"
-                >
-                  {{ isPassed ? '✓ ĐẠT' : '✗ KHÔNG ĐẠT' }}
+                <span :class="[
+                  'badge badge-lg',
+                  isPassed ? 'bg-success' : 'bg-danger'
+                ]">
+                  <i :class="isPassed ? 'fa fa-check' : 'fa fa-times'"></i>
+                  {{ isPassed ? ' ĐẠT' : ' KHÔNG ĐẠT' }}
                 </span>
               </p>
             </div>
@@ -58,7 +54,7 @@
         <div class="col-md-6">
           <div class="card">
             <div class="card-header bg-info text-white">
-              <h5 class="mb-0">📈 Chi Tiết</h5>
+              <h5 class="mb-0"><i class="fa fa-line-chart"></i> Chi Tiết</h5>
             </div>
             <div class="card-body">
               <div class="mb-3">
@@ -68,18 +64,17 @@
               </div>
               <div class="border-top pt-3">
                 <p class="mb-1">
-                  <span class="badge bg-success me-2">✓ Đúng: {{ result.so_cau_dung }}</span>
-                  <span class="badge bg-danger me-2">✗ Sai: {{ result.so_cau_sai }}</span>
-                  <span class="badge bg-secondary">⊘ Bỏ trống: {{ result.so_cau_bo_trong }}</span>
+                  <span class="badge bg-success me-2"><i class="fa fa-check"></i> Đúng: {{ result.so_cau_dung }}</span>
+                  <span class="badge bg-danger me-2"><i class="fa fa-times"></i> Sai: {{ result.so_cau_sai }}</span>
+                  <span class="badge bg-secondary"><i class="fa fa-circle-o"></i> Bỏ trống: {{ result.so_cau_bo_trong
+                    }}</span>
                 </p>
                 <p class="mb-0 mt-2">
                   <strong>Trạng Thái:</strong>
-                  <span 
-                    :class="[
-                      'badge',
-                      result.trang_thai === 'completed' ? 'bg-success' : 'bg-warning'
-                    ]"
-                  >
+                  <span :class="[
+                    'badge',
+                    result.trang_thai === 'completed' ? 'bg-success' : 'bg-warning'
+                  ]">
                     {{ statusText }}
                   </span>
                 </p>
@@ -92,34 +87,35 @@
       <!-- Questions Review -->
       <div v-if="chiTietTungCau.length" class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h5 class="mb-0">❓ Chi Tiết Từng Câu</h5>
+          <h5 class="mb-0"><i class="fa fa-question-circle"></i> Chi Tiết Từng Câu</h5>
         </div>
         <div class="card-body">
-          <div 
-            v-for="(item, index) in chiTietTungCau"
-            :key="index"
-            class="mb-4 pb-4 border-bottom"
-          >
+          <div v-for="(item, index) in chiTietTungCau" :key="index" class="mb-4 pb-4 border-bottom">
             <!-- Question -->
             <div class="mb-3">
               <h6 class="mb-2">
                 <span class="badge bg-secondary">Câu {{ index + 1 }}</span>
                 <span class="ms-2">{{ item.noi_dung_cau_hoi }}</span>
               </h6>
+              
+              <!-- Audio & Image Display Added Here -->
+              <div v-if="item.audio_url" class="mt-2 mb-3">
+                <audio controls :src="item.audio_url" class="w-100" style="max-width: 400px; height: 40px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></audio>
+              </div>
+              <div v-if="item.hinh_anh_url" class="mt-2 mb-3">
+                <img :src="item.hinh_anh_url" class="img-fluid rounded border shadow-sm" style="max-height: 250px;">
+              </div>
             </div>
 
             <!-- Student Answer -->
             <div class="mb-2">
               <p class="mb-1">
-                <strong>📝 Câu Trả Lời Của Bạn:</strong>
+                <strong><i class="fa fa-pencil"></i> Câu Trả Lời Của Bạn:</strong>
               </p>
-              <div 
-                class="alert py-2"
-                :class="{
-                  'alert-success': item.diem_tong > 0,
-                  'alert-danger': item.diem_tong <= 0
-                }"
-              >
+              <div class="alert py-2" :class="{
+                'alert-success': item.diem_tong > 0,
+                'alert-danger': item.diem_tong <= 0
+              }">
                 {{ item.dap_an_chon || 'Không có câu trả lời' }}
               </div>
             </div>
@@ -127,7 +123,7 @@
             <!-- Correct Answer -->
             <div v-if="item.dap_an_dung" class="mb-2">
               <p class="mb-1">
-                <strong>✅ Đáp Án Đúng:</strong>
+                <strong><i class="fa fa-check-circle"></i> Đáp Án Đúng:</strong>
               </p>
               <div class="alert alert-success py-2">
                 {{ item.dap_an_dung }}
@@ -147,18 +143,12 @@
       <!-- Actions -->
       <div class="d-flex gap-2 mb-4">
         <!-- Back Button -->
-        <router-link 
-          to="/"
-          class="btn btn-outline-secondary"
-        >
+        <router-link to="/" class="btn btn-outline-secondary">
           <i class="fa fa-arrow-left"></i> Quay Lại Trang Chủ
         </router-link>
 
         <!-- Print Button -->
-        <button 
-          @click="onPrint"
-          class="btn btn-outline-info"
-        >
+        <button @click="onPrint" class="btn btn-outline-info">
           <i class="fa fa-print"></i> In Kết Quả
         </button>
       </div>
@@ -185,7 +175,7 @@ const error = ref("");
 // Computed
 const scorePercentage = computed(() => {
   if (!result.value.diem_tong && result.value.diem_tong !== 0) return 0;
-  const maxScore = result.value.diem_tong_max || 
+  const maxScore = result.value.diem_tong_max ||
     chiTietTungCau.value.reduce((sum, q) => sum + (q.diem_max || 0), 0) || 100;
   return Math.round((result.value.diem_tong / maxScore) * 100);
 });
@@ -236,7 +226,7 @@ const loadResult = async () => {
   try {
     await testStore.fetchResult(testId.value);
     const data = testStore.testResult;
-    
+
     if (!data) {
       error.value = "Không tìm thấy kết quả bài test";
       return;

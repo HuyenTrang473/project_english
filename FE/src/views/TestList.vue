@@ -2,7 +2,7 @@
   <div class="container-fluid py-4">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-      <h1 class="mb-0">📋 Danh Sách Bài Test</h1>
+      <h1 class="mb-0"><i class="fa fa-list-alt"></i> Danh Sách Bài Test</h1>
 
       <!-- Action Buttons -->
       <div class="d-flex gap-2 flex-wrap">
@@ -44,7 +44,7 @@
     <!-- Settings Panel -->
     <div v-if="showSettings" class="alert alert-light border mb-4">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <h6 class="mb-0">⚙️ Cài đặt hiển thị</h6>
+        <h6 class="mb-0"><i class="fa fa-cogs"></i> Cài đặt hiển thị</h6>
         <button @click="showSettings = false" class="btn-close"></button>
       </div>
       <div class="row g-3">
@@ -154,7 +154,8 @@
                 'badge',
                 test.trang_thai === 2 ? 'bg-success' : 'bg-secondary'
               ]">
-                {{ test.trang_thai === 2 ? '✓ Công Bố' : '✎ Nháp' }}
+                <i :class="test.trang_thai === 2 ? 'fa fa-check' : 'fa fa-pencil'"></i>
+                {{ test.trang_thai === 2 ? ' Công Bố' : ' Nháp' }}
               </span>
             </div>
           </div>
@@ -217,7 +218,8 @@
                 'badge',
                 test.trang_thai === 2 ? 'bg-success' : 'bg-secondary'
               ]">
-                {{ test.trang_thai === 2 ? '✓ Công Bố' : '✎ Nháp' }}
+                <i :class="test.trang_thai === 2 ? 'fa fa-check' : 'fa fa-pencil'"></i>
+                {{ test.trang_thai === 2 ? ' Công Bố' : ' Nháp' }}
               </span>
             </td>
             <td class="text-center">

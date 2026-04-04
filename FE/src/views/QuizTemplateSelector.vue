@@ -12,12 +12,12 @@
     <div class="row g-4">
       <!-- Quiz Type Section: Listening -->
       <div class="col-12">
-        <h5 class="text-white mb-3">🎧 Quiz Nghe (Listening)</h5>
+        <h5 class="text-white mb-3"><i class="fa fa-headphones"></i> Quiz Nghe (Listening)</h5>
       </div>
       <div class="col-md-6 col-lg-4">
         <div class="card h-100 shadow-lg hover-card cursor-pointer" @click="goToBuilder('listening_basic')">
           <div class="card-body text-center py-5">
-            <div class="display-1 mb-3">🎧</div>
+            <div class="display-1 mb-3"><i class="fa fa-headphones"></i></div>
             <h5 class="card-title">Listening Cơ Bản</h5>
             <p class="card-text text-muted small">Quiz nghe đơn giản, 10-15 câu</p>
             <div class="mt-3">
@@ -31,7 +31,7 @@
       <div class="col-md-6 col-lg-4">
         <div class="card h-100 shadow-lg hover-card cursor-pointer" @click="goToBuilder('listening_advanced')">
           <div class="card-body text-center py-5">
-            <div class="display-1 mb-3">🎧📈</div>
+            <div class="display-1 mb-3"><i class="fa fa-headphones"></i><i class="fa fa-line-chart ms-2"></i></div>
             <h5 class="card-title">Listening Nâng Cao</h5>
             <p class="card-text text-muted small">Quiz nghe phức tạp, 20-25 câu</p>
             <div class="mt-3">
@@ -44,12 +44,12 @@
 
       <!-- Quiz Type Section: Reading -->
       <div class="col-12 mt-4">
-        <h5 class="text-white mb-3">📖 Quiz Đọc (Reading)</h5>
+        <h5 class="text-white mb-3"><i class="fa fa-book"></i> Quiz Đọc (Reading)</h5>
       </div>
       <div class="col-md-6 col-lg-4">
         <div class="card h-100 shadow-lg hover-card cursor-pointer" @click="goToBuilder('reading_basic')">
           <div class="card-body text-center py-5">
-            <div class="display-1 mb-3">📖</div>
+            <div class="display-1 mb-3"><i class="fa fa-book"></i></div>
             <h5 class="card-title">Reading Cơ Bản</h5>
             <p class="card-text text-muted small">Quiz đọc hiểu đơn giản, 10-15 câu</p>
             <div class="mt-3">
@@ -63,7 +63,7 @@
       <div class="col-md-6 col-lg-4">
         <div class="card h-100 shadow-lg hover-card cursor-pointer" @click="goToBuilder('reading_advanced')">
           <div class="card-body text-center py-5">
-            <div class="display-1 mb-3">📖📈</div>
+            <div class="display-1 mb-3"><i class="fa fa-book"></i><i class="fa fa-line-chart ms-2"></i></div>
             <h5 class="card-title">Reading Nâng Cao</h5>
             <p class="card-text text-muted small">Quiz đọc hiểu phức tạp, 20-25 câu</p>
             <div class="mt-3">
@@ -76,12 +76,12 @@
 
       <!-- Quiz Type Section: Writing -->
       <div class="col-12 mt-4">
-        <h5 class="text-white mb-3">✍️ Quiz Viết (Writing)</h5>
+        <h5 class="text-white mb-3"><i class="fa fa-pencil"></i> Quiz Viết (Writing)</h5>
       </div>
       <div class="col-md-6 col-lg-4">
         <div class="card h-100 shadow-lg hover-card cursor-pointer" @click="goToBuilder('writing_basic')">
           <div class="card-body text-center py-5">
-            <div class="display-1 mb-3">✍️</div>
+            <div class="display-1 mb-3"><i class="fa fa-pencil"></i></div>
             <h5 class="card-title">Writing Cơ Bản</h5>
             <p class="card-text text-muted small">Quiz viết đơn giản, 5-8 câu</p>
             <div class="mt-3">
@@ -95,7 +95,7 @@
       <div class="col-md-6 col-lg-4">
         <div class="card h-100 shadow-lg hover-card cursor-pointer" @click="goToBuilder('writing_advanced')">
           <div class="card-body text-center py-5">
-            <div class="display-1 mb-3">✍️📈</div>
+            <div class="display-1 mb-3"><i class="fa fa-pencil"></i><i class="fa fa-line-chart ms-2"></i></div>
             <h5 class="card-title">Writing Nâng Cao</h5>
             <p class="card-text text-muted small">Quiz viết phức tạp, 8-12 câu</p>
             <div class="mt-3">
@@ -108,12 +108,12 @@
 
       <!-- Quiz Type Section: Mixed -->
       <div class="col-12 mt-4">
-        <h5 class="text-white mb-3">🎯 Test Năng Lực Hỗn Hợp (Mixed)</h5>
+        <h5 class="text-white mb-3"><i class="fa fa-bullseye"></i> Test Năng Lực Hỗn Hợp (Mixed)</h5>
       </div>
       <div class="col-md-6 col-lg-4">
         <div class="card h-100 shadow-lg hover-card cursor-pointer" @click="goToBuilder('mixed_standard')">
           <div class="card-body text-center py-5">
-            <div class="display-1 mb-3">🎯</div>
+            <div class="display-1 mb-3"><i class="fa fa-bullseye"></i></div>
             <h5 class="card-title">Test Hỗn Hợp Chuẩn</h5>
             <p class="card-text text-muted small">Test tổng hợp tất cả kỹ năng</p>
             <div class="mt-3">
@@ -127,7 +127,7 @@
       <div class="col-md-6 col-lg-4">
         <div class="card h-100 shadow-lg hover-card cursor-pointer" @click="goToBuilder('mixed_comprehensive')">
           <div class="card-body text-center py-5">
-            <div class="display-1 mb-3">🎯🏆</div>
+            <div class="display-1 mb-3"><i class="fa fa-bullseye"></i><i class="fa fa-trophy ms-2"></i></div>
             <h5 class="card-title">Test Năng Lực Toàn Diện</h5>
             <p class="card-text text-muted small">Đánh giá chi tiết tất cả kỹ năng</p>
             <div class="mt-3">
@@ -140,13 +140,13 @@
 
       <!-- Other Templates -->
       <div class="col-12 mt-4">
-        <h5 class="text-white mb-3">📋 Template Khác</h5>
+        <h5 class="text-white mb-3"><i class="fa fa-list-alt"></i> Template Khác</h5>
       </div>
       <!-- Blank Quiz -->
       <div class="col-md-6 col-lg-4">
         <div class="card h-100 shadow-lg hover-card cursor-pointer" @click="goToBuilder('blank')">
           <div class="card-body text-center py-5">
-            <div class="display-1 mb-3">📝</div>
+            <div class="display-1 mb-3"><i class="fa fa-file-text-o"></i></div>
             <h5 class="card-title">Bài Quiz Trắng</h5>
             <p class="card-text text-muted small">Tạo từ đầu với các cài đặt tùy chỉnh</p>
             <div class="mt-3">
@@ -159,20 +159,14 @@
 
     <!-- Recent Tests -->
     <div v-if="recentTests.length > 0" class="mt-5">
-      <h5 class="text-white mb-3">📚 Bài Test Gần Đây</h5>
+      <h5 class="text-white mb-3"><i class="fa fa-book"></i> Bài Test Gần Đây</h5>
       <div class="row g-3">
-        <div 
-          v-for="test in recentTests"
-          :key="test.id"
-          class="col-md-6"
-        >
-          <div 
-            class="card bg-white text-dark hover-card cursor-pointer"
-            @click="goToEdit(test.id)"
-          >
+        <div v-for="test in recentTests" :key="test.id" class="col-md-6">
+          <div class="card bg-white text-dark hover-card cursor-pointer" @click="goToEdit(test.id)">
             <div class="card-body">
               <h6 class="card-title mb-1">{{ test.ten_bai_test }}</h6>
-              <small class="text-muted">{{ test.questions?.length || 0 }} câu hỏi • {{ test.thoi_gian_toi_da }} phút</small>
+              <small class="text-muted">{{ test.questions?.length || 0 }} câu hỏi • {{ test.thoi_gian_toi_da }}
+                phút</small>
             </div>
           </div>
         </div>

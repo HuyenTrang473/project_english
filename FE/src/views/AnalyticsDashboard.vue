@@ -2,11 +2,8 @@
   <div class="container-fluid py-4">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1>📊 Thống Kê Bài Test</h1>
-      <router-link 
-        to="/tests"
-        class="btn btn-outline-secondary"
-      >
+      <h1><i class="fa fa-bar-chart"></i> Thống Kê Bài Test</h1>
+      <router-link to="/tests" class="btn btn-outline-secondary">
         <i class="fa fa-arrow-left"></i> Quay Lại
       </router-link>
     </div>
@@ -23,7 +20,7 @@
       <!-- Test Info Card -->
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h5 class="mb-0">📝 Thông Tin Bài Test</h5>
+          <h5 class="mb-0"><i class="fa fa-pencil"></i> Thông Tin Bài Test</h5>
         </div>
         <div class="card-body">
           <div class="row">
@@ -83,14 +80,10 @@
         <div class="col-md-6">
           <div class="card">
             <div class="card-header bg-success text-white">
-              <h5 class="mb-0">📈 Phân Bố Điểm</h5>
+              <h5 class="mb-0"><i class="fa fa-line-chart"></i> Phân Bố Điểm</h5>
             </div>
             <div class="card-body">
-              <canvas 
-                v-if="chartInstance"
-                id="scoreChart"
-                style="max-height: 300px"
-              ></canvas>
+              <canvas v-if="chartInstance" id="scoreChart" style="max-height: 300px"></canvas>
               <p v-else class="text-muted text-center">Đang tải biểu đồ...</p>
             </div>
           </div>
@@ -100,18 +93,15 @@
         <div class="col-md-6">
           <div class="card">
             <div class="card-header bg-info text-white">
-              <h5 class="mb-0">📊 Tỷ Lệ Đạt/Không Đạt</h5>
+              <h5 class="mb-0"><i class="fa fa-pie-chart"></i> Tỷ Lệ Đạt/Không Đạt</h5>
             </div>
             <div class="card-body">
               <div class="mx-auto" style="max-width: 300px;">
-                <canvas 
-                  v-if="pieChartInstance"
-                  id="passRateChart"
-                ></canvas>
+                <canvas v-if="pieChartInstance" id="passRateChart"></canvas>
               </div>
               <div class="mt-3 text-center">
-                <span class="badge bg-success me-2">✓ Đạt: {{ passedCount }}</span>
-                <span class="badge bg-danger">✗ Không Đạt: {{ failedCount }}</span>
+                <span class="badge bg-success me-2"><i class="fa fa-check"></i> Đạt: {{ passedCount }}</span>
+                <span class="badge bg-danger"><i class="fa fa-times"></i> Không Đạt: {{ failedCount }}</span>
               </div>
             </div>
           </div>
@@ -121,7 +111,7 @@
       <!-- Question Analytics -->
       <div class="card mb-4">
         <div class="card-header bg-warning text-dark">
-          <h5 class="mb-0">❓ Phân Tích Chi Tiết Câu Hỏi</h5>
+          <h5 class="mb-0"><i class="fa fa-question-circle"></i> Phân Tích Chi Tiết Câu Hỏi</h5>
         </div>
         <div class="card-body">
           <div class="table-responsive">
@@ -151,23 +141,18 @@
                   <td>{{ question.diem_toi_da }}</td>
                   <td>
                     <div class="progress" style="height: 20px;">
-                      <div 
-                        class="progress-bar"
-                        :style="{ width: getQuestionCorrectRate(question) + '%' }"
-                      >
+                      <div class="progress-bar" :style="{ width: getQuestionCorrectRate(question) + '%' }">
                         {{ getQuestionCorrectRate(question).toFixed(1) }}%
                       </div>
                     </div>
                   </td>
                   <td>{{ getQuestionAverageScore(question).toFixed(2) }}</td>
                   <td>
-                    <span 
-                      :class="[
-                        'badge',
-                        getDifficulty(question) === 'Dễ' ? 'bg-success' : 
+                    <span :class="[
+                      'badge',
+                      getDifficulty(question) === 'Dễ' ? 'bg-success' :
                         getDifficulty(question) === 'Trung Bình' ? 'bg-warning' : 'bg-danger'
-                      ]"
-                    >
+                    ]">
                       {{ getDifficulty(question) }}
                     </span>
                   </td>
@@ -184,13 +169,8 @@
           <div class="d-flex justify-content-between align-items-center">
             <h5 class="mb-0">👥 Kết Quả Học Sinh</h5>
             <div>
-              <input 
-                v-model="searchStudent"
-                type="text"
-                class="form-control form-control-sm"
-                placeholder="Tìm học sinh..."
-                style="width: 200px; display: inline-width"
-              >
+              <input v-model="searchStudent" type="text" class="form-control form-control-sm"
+                placeholder="Tìm học sinh..." style="width: 200px; display: inline-width">
             </div>
           </div>
         </div>
@@ -210,14 +190,10 @@
                 </tr>
               </thead>
               <tbody>
-                <tr 
-                  v-for="attempt in filteredAttempts"
-                  :key="attempt.id"
-                  :class="{
-                    'table-success': attempt.diem_thi >= test.diem_dat,
-                    'table-danger': attempt.diem_thi < test.diem_dat
-                  }"
-                >
+                <tr v-for="attempt in filteredAttempts" :key="attempt.id" :class="{
+                  'table-success': attempt.diem_thi >= test.diem_dat,
+                  'table-danger': attempt.diem_thi < test.diem_dat
+                }">
                   <td>
                     <strong>{{ attempt.hoc_sinh_name }}</strong>
                     <br>
@@ -234,21 +210,16 @@
                   <td>{{ attempt.thoi_gian_lam_tot }} phút</td>
                   <td>{{ formatDate(attempt.ngay_nop) }}</td>
                   <td>
-                    <span 
-                      :class="[
-                        'badge',
-                        attempt.trang_thai === 'graded' ? 'bg-success' :
+                    <span :class="[
+                      'badge',
+                      attempt.trang_thai === 'graded' ? 'bg-success' :
                         attempt.trang_thai === 'pending_review' ? 'bg-warning' : 'bg-info'
-                      ]"
-                    >
+                    ]">
                       {{ getStatusText(attempt.trang_thai) }}
                     </span>
                   </td>
                   <td>
-                    <router-link 
-                      :to="`/tests/${testId}/result/${attempt.id}`"
-                      class="btn btn-sm btn-info"
-                    >
+                    <router-link :to="`/tests/${testId}/result/${attempt.id}`" class="btn btn-sm btn-info">
                       <i class="fa fa-eye"></i>
                     </router-link>
                   </td>
@@ -261,10 +232,7 @@
 
       <!-- Export Button -->
       <div class="d-grid gap-2">
-        <button 
-          @click="onExportCSV"
-          class="btn btn-lg btn-outline-success"
-        >
+        <button @click="onExportCSV" class="btn btn-lg btn-outline-success">
           <i class="fa fa-download"></i> Xuất Excel CSV
         </button>
       </div>
@@ -440,7 +408,7 @@ const loadAnalytics = async () => {
     test.value = data.test;
     questions.value = data.questions || [];
     attempts.value = data.attempts || [];
-    
+
     // Initialize charts after data loads
     setTimeout(initCharts, 100);
   } catch (err) {

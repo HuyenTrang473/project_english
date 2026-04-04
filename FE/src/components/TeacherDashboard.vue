@@ -71,7 +71,7 @@
                 <div v-for="answer in question.answers" :key="answer.id" class="answer-item"
                   :class="{ correct: answer.isCorrect }">
                   <span class="answer-content">{{ answer.content }}</span>
-                  <span v-if="answer.isCorrect" class="correct-badge">✓ Đúng</span>
+                  <span v-if="answer.isCorrect" class="correct-badge"><i class="fa fa-check"></i> Đúng</span>
                   <button class="btn-edit-small" @click="editAnswer(question, answer)">
                     Sửa
                   </button>

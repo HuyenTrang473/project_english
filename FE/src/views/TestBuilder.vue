@@ -4,7 +4,10 @@
     <div class="mb-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-          <h1 class="mb-0">{{ isView ? '👁️ Xem Chi Tiết Bài Test' : (isEdit ? '✏️ Chỉnh Sửa Bài Test' : '➕ Tạo Bài Test Mới') }}</h1>
+          <h1 class="mb-0">
+            <i :class="isView ? 'fa fa-eye' : (isEdit ? 'fa fa-pencil' : 'fa fa-plus-circle')"></i>
+            {{ isView ? ' Xem Chi Tiết Bài Test' : (isEdit ? ' Chỉnh Sửa Bài Test' : ' Tạo Bài Test Mới') }}
+          </h1>
           <small class="text-muted">Xây dựng và quản lý bài test trắc nghiệm cho học sinh</small>
         </div>
         <button @click="onBack" class="btn btn-outline-secondary">
@@ -28,7 +31,7 @@
       <div class="col-lg-8">
         <div class="card mb-4">
           <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">⚙️ Cài Đặt Bài Test</h5>
+            <h5 class="mb-0"><i class="fa fa-cogs"></i> Cài Đặt Bài Test</h5>
           </div>
           <div class="card-body">
             <fieldset :disabled="isView">
@@ -53,7 +56,7 @@
                     <i class="fa fa-book fa-2x text-info"></i>
                   </div>
                   <div class="flex-grow-1">
-                    <h6 class="mb-2">📖 {{ selectedLesson.tieu_de }}</h6>
+                    <h6 class="mb-2"><i class="fa fa-book"></i> {{ selectedLesson.tieu_de }}</h6>
                     <p class="mb-1 small" v-if="selectedLesson.mo_ta">
                       <strong>Nội dung:</strong> {{ selectedLesson.mo_ta }}
                     </p>
@@ -68,10 +71,10 @@
               <div class="mb-3">
                 <label class="form-label">Loại Quiz <span class="text-danger">*</span></label>
                 <select v-model="form.loai_quiz" class="form-select">
-                  <option value="listening">🎧 Listening (Nghe)</option>
-                  <option value="writing">✍️ Writing (Viết)</option>
-                  <option value="reading">📖 Reading (Đọc)</option>
-                  <option value="mixed">🎯 Mixed (Hỗn Hợp - Test Năng Lực)</option>
+                  <option value="listening">Listening (Nghe)</option>
+                  <option value="writing">Writing (Viết)</option>
+                  <option value="reading">Reading (Đọc)</option>
+                  <option value="mixed">Mixed (Hỗn Hợp - Test Năng Lực)</option>
                 </select>
                 <small class="form-text text-muted">
                   Chọn loại quiz để tổ chức câu hỏi một cách hợp lý
@@ -183,8 +186,8 @@
               <div class="mb-3">
                 <label class="form-label">Trạng Thái</label>
                 <select v-model.number="form.trang_thai" class="form-select">
-                  <option :value="1">🗒️ Nháp</option>
-                  <option :value="2">📢 Công Bố</option>
+                  <option :value="1">Nháp</option>
+                  <option :value="2">Công Bố</option>
                 </select>
               </div>
             </fieldset>
@@ -196,7 +199,7 @@
       <div class="col-lg-4">
         <div class="card sticky-top" style="top: 20px;">
           <div class="card-header bg-info text-white">
-            <h5 class="mb-0">📊 Tóm Tắt</h5>
+            <h5 class="mb-0"><i class="fa fa-bar-chart"></i> Tóm Tắt</h5>
           </div>
           <div class="card-body">
             <div class="mb-3">
@@ -217,10 +220,10 @@
               </p>
               <div class="mt-3 pt-3 border-top">
                 <div class="badge bg-primary">
-                  {{ form.co_xao_tron_cau_hoi ? '✓' : '✗' }} Trộn Câu Hỏi
+                  <i :class="form.co_xao_tron_cau_hoi ? 'fa fa-check' : 'fa fa-times'"></i> Trộn Câu Hỏi
                 </div>
                 <div class="badge bg-primary ms-1">
-                  {{ form.co_xao_tron_dap_an ? '✓' : '✗' }} Trộn Đáp Án
+                  <i :class="form.co_xao_tron_dap_an ? 'fa fa-check' : 'fa fa-times'"></i> Trộn Đáp Án
                 </div>
               </div>
             </div>
@@ -233,7 +236,7 @@
     <div class="card mt-4 mb-4">
       <div class="card-header bg-success text-white">
         <div class="d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">❓ Câu Hỏi ({{ questions.length }})</h5>
+          <h5 class="mb-0"><i class="fa fa-question-circle"></i> Câu Hỏi ({{ questions.length }})</h5>
           <button v-if="!isView" @click="openQuestionEditor()" class="btn btn-light btn-sm">
             <i class="fa fa-plus"></i> Thêm Câu Hỏi
           </button>
@@ -367,10 +370,10 @@ const getQuizTypeDescription = (quizType) => {
 
 const getQuizTypeLabel = (quizType) => {
   const labels = {
-    listening: "🎧 Listening (Nghe)",
-    writing: "✍️ Writing (Viết)",
-    reading: "📖 Reading (Đọc)",
-    mixed: "🎯 Mixed (Hỗn Hợp)"
+    listening: "Listening (Nghe)",
+    writing: "Writing (Viết)",
+    reading: "Reading (Đọc)",
+    mixed: "Mixed (Hỗn Hợp)"
   };
   return labels[quizType] || "Unknown";
 };

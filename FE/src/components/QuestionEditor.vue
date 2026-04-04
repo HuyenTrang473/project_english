@@ -5,7 +5,8 @@
         <!-- Header -->
         <div class="modal-header bg-primary text-white">
           <h5 class="modal-title">
-            {{ question ? '✏️ Chỉnh Sửa Câu Hỏi' : '➕ Tạo Câu Hỏi Mới' }}
+            <i :class="question ? 'fa fa-pencil' : 'fa fa-plus-circle'"></i>
+            {{ question ? ' Chỉnh Sửa Câu Hỏi' : ' Tạo Câu Hỏi Mới' }}
           </h5>
           <button @click="$emit('close')" type="button" class="btn-close btn-close-white"></button>
         </div>
@@ -16,12 +17,12 @@
           <div class="mb-3">
             <label class="form-label">Loại Câu Hỏi *</label>
             <select v-model="form.loai_cau_hoi" class="form-select">
-              <option value="multiple_choice">📋 Trắc Nghiệm (Multiple Choice)</option>
-              <option value="true_false">✓✗ Đúng/Sai (True/False)</option>
-              <option value="essay">📝 Tự Luận (Essay)</option>
-              <option value="matching">🔗 Ghép Đôi (Matching)</option>
+              <option value="multiple_choice">Trắc Nghiệm (Multiple Choice)</option>
+              <option value="true_false">Đúng/Sai (True/False)</option>
+              <option value="essay">Tự Luận (Essay)</option>
+              <option value="matching">Ghép Đôi (Matching)</option>
               <option value="fill_blank">___ Điền Chỗ Trống (Fill Blank)</option>
-              <option value="image_choice">🖼️ Chọn Hình Ảnh (Image Choice)</option>
+              <option value="image_choice">Chọn Hình Ảnh (Image Choice)</option>
             </select>
           </div>
 
@@ -56,7 +57,7 @@
           <!-- Audio Upload for Listening Questions -->
           <div v-if="loaiQuiz === 'listening'" class="mb-3">
             <label class="form-label">
-              🎧 File Audio (<span class="text-danger">Bắt Buộc</span>)
+              <i class="fa fa-headphones"></i> File Audio (<span class="text-danger">Bắt Buộc</span>)
             </label>
             <div class="audio-upload-section">
               <div class="input-group mb-2">
@@ -64,7 +65,7 @@
                   class="form-control" :id="`audio-upload-${Date.now()}`" ref="audioInput" :disabled="audioUploading">
                 <button v-if="form.audio_file_name && form.audio_url" @click="removeAudio"
                   class="btn btn-outline-danger" type="button" :disabled="audioUploading">
-                  🗑️ Xóa
+                  <i class="fa fa-trash"></i> Xóa
                 </button>
               </div>
               <small class="form-text text-muted d-block mb-2">
@@ -86,7 +87,7 @@
               <div v-if="audioUploading" class="progress mb-2">
                 <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
                   style="width: 100%">
-                  📤 Đang tải audio...
+                  <i class="fa fa-upload"></i> Đang tải audio...
                 </div>
               </div>
 

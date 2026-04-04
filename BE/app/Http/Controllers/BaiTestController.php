@@ -349,14 +349,15 @@ class BaiTestController extends Controller
                 'thoi_gian_toi_da' => $request->thoi_gian_toi_da,
                 'diem_tong_max' => $request->diem_tong_max,
                 'trang_thai' => $request->trang_thai ?? 1,
-                'so_lan_lam_toi_da' => $request->so_lan_lam_toi_da ?? 1,
-                'co_xao_tron_cau_hoi' => $request->co_xao_tron_cau_hoi ?? false,
-                'co_xao_tron_dap_an' => $request->co_xao_tron_dap_an ?? false,
-                'hien_thi_ket_qua_ngay_lap' => $request->hien_thi_ket_qua_ngay_lap ?? true,
-                'hien_thi_dap_an_dung' => $request->hien_thi_dap_an_dung ?? true,
-                'cho_xem_lai_test' => $request->cho_xem_lai_test ?? true,
-                'ngay_bat_dau' => $request->ngay_bat_dau,
-                'ngay_ket_thuc' => $request->ngay_ket_thuc,
+                'so_lan_lam_toi_da' => in_array($request->input('so_lan_lam_toi_da'), ['null', 'undefined', ''], true) ? 1 : $request->input('so_lan_lam_toi_da', 1),
+                'diem_dat' => in_array($request->input('diem_dat'), ['null', 'undefined', ''], true) ? null : $request->input('diem_dat', 0),
+                'co_xao_tron_cau_hoi' => $request->boolean('co_xao_tron_cau_hoi', false),
+                'co_xao_tron_dap_an' => $request->boolean('co_xao_tron_dap_an', false),
+                'hien_thi_ket_qua_ngay_lap' => $request->boolean('hien_thi_ket_qua_ngay_lap', true),
+                'hien_thi_dap_an_dung' => $request->boolean('hien_thi_dap_an_dung', true),
+                'cho_xem_lai_test' => $request->boolean('cho_xem_lai_test', true),
+                'ngay_bat_dau' => in_array($request->input('ngay_bat_dau'), ['null', 'undefined', ''], true) ? null : $request->input('ngay_bat_dau'),
+                'ngay_ket_thuc' => in_array($request->input('ngay_ket_thuc'), ['null', 'undefined', ''], true) ? null : $request->input('ngay_ket_thuc'),
             ]);
 
             // Create questions if provided
@@ -466,14 +467,15 @@ class BaiTestController extends Controller
                 'thoi_gian_toi_da' => $request->thoi_gian_toi_da,
                 'diem_tong_max' => $request->diem_tong_max,
                 'trang_thai' => $request->trang_thai,
-                'so_lan_lam_toi_da' => $request->so_lan_lam_toi_da ?? $test->so_lan_lam_toi_da,
-                'co_xao_tron_cau_hoi' => $request->co_xao_tron_cau_hoi ?? $test->co_xao_tron_cau_hoi,
-                'co_xao_tron_dap_an' => $request->co_xao_tron_dap_an ?? $test->co_xao_tron_dap_an,
-                'hien_thi_ket_qua_ngay_lap' => $request->hien_thi_ket_qua_ngay_lap ?? $test->hien_thi_ket_qua_ngay_lap,
-                'hien_thi_dap_an_dung' => $request->hien_thi_dap_an_dung ?? $test->hien_thi_dap_an_dung,
-                'cho_xem_lai_test' => $request->cho_xem_lai_test ?? $test->cho_xem_lai_test,
-                'ngay_bat_dau' => $request->ngay_bat_dau,
-                'ngay_ket_thuc' => $request->ngay_ket_thuc,
+                'so_lan_lam_toi_da' => !$request->has('so_lan_lam_toi_da') || in_array($request->input('so_lan_lam_toi_da'), ['null', 'undefined', ''], true) ? $test->so_lan_lam_toi_da : $request->input('so_lan_lam_toi_da'),
+                'diem_dat' => !$request->has('diem_dat') || in_array($request->input('diem_dat'), ['null', 'undefined', ''], true) ? $test->diem_dat : $request->input('diem_dat'),
+                'co_xao_tron_cau_hoi' => $request->has('co_xao_tron_cau_hoi') ? $request->boolean('co_xao_tron_cau_hoi') : $test->co_xao_tron_cau_hoi,
+                'co_xao_tron_dap_an' => $request->has('co_xao_tron_dap_an') ? $request->boolean('co_xao_tron_dap_an') : $test->co_xao_tron_dap_an,
+                'hien_thi_ket_qua_ngay_lap' => $request->has('hien_thi_ket_qua_ngay_lap') ? $request->boolean('hien_thi_ket_qua_ngay_lap') : $test->hien_thi_ket_qua_ngay_lap,
+                'hien_thi_dap_an_dung' => $request->has('hien_thi_dap_an_dung') ? $request->boolean('hien_thi_dap_an_dung') : $test->hien_thi_dap_an_dung,
+                'cho_xem_lai_test' => $request->has('cho_xem_lai_test') ? $request->boolean('cho_xem_lai_test') : $test->cho_xem_lai_test,
+                'ngay_bat_dau' => in_array($request->input('ngay_bat_dau'), ['null', 'undefined', ''], true) ? null : ($request->has('ngay_bat_dau') ? $request->input('ngay_bat_dau') : $test->ngay_bat_dau),
+                'ngay_ket_thuc' => in_array($request->input('ngay_ket_thuc'), ['null', 'undefined', ''], true) ? null : ($request->has('ngay_ket_thuc') ? $request->input('ngay_ket_thuc') : $test->ngay_ket_thuc),
             ]);
 
             // Handle questions update if provided
@@ -563,6 +565,10 @@ class BaiTestController extends Controller
                                 ]);
                             }
                         }
+                        
+                        // IMPORTANT: Add the newly created question to the list of existing IDs
+                        // so it's not immediately deleted by the cleanup routine below!
+                        $existingQuestionIds[] = $question->id;
                     }
                 }
 
@@ -955,6 +961,8 @@ class BaiTestController extends Controller
                     $data = [
                         'id_cau_hoi' => $answer->id_cau_hoi,
                         'noi_dung_cau_hoi' => $answer->cauHoi->noi_dung,
+                        'audio_url' => $answer->cauHoi->audio_url ? url($answer->cauHoi->audio_url) : null,
+                        'hinh_anh_url' => $answer->cauHoi->hinh_anh_url,
                         'loai_cau_hoi' => $answer->cauHoi->loai_cau_hoi,
                         'diem_max' => $answer->cauHoi->diem_max,
                         'diem_tong' => $answer->diem_cau_hoi ?? 0,

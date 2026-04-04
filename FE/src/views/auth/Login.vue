@@ -23,6 +23,14 @@
                                 </button>
                             </div>
 
+                            <div class="text-center my-3 text-muted small">hoặc</div>
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-outline-dark" :disabled="loading"
+                                    @click="handleGoogleLoginRedirect">
+                                    Tiếp tục với Google
+                                </button>
+                            </div>
+
                             <!-- Display Errors Dynamically -->
                             <div v-if="apiError"
                                 class="alert alert-danger mt-3 mb-0 small rounded-3 border-0 shadow-sm py-2">
@@ -80,5 +88,10 @@ const handleLogin = async () => {
     } finally {
         loading.value = false;
     }
+};
+
+const handleGoogleLoginRedirect = () => {
+    const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api').replace(/\/$/, '');
+    window.location.href = `${base}/auth/google/redirect`;
 };
 </script>
