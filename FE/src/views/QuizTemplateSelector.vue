@@ -279,6 +279,9 @@ const templatePresets = {
     diem_tong_max: 100,
     so_lan_lam_toi_da: 3,
     diem_dat: 60,
+    hien_thi_ket_qua_ngay_lap: true,
+    hien_thi_dap_an_dung: false,
+    cho_xem_lai_test: true,
   },
   listening_advanced: {
     ten_bai_test: 'Listening Nâng Cao',
@@ -289,6 +292,9 @@ const templatePresets = {
     diem_tong_max: 200,
     so_lan_lam_toi_da: 2,
     diem_dat: 120,
+    hien_thi_ket_qua_ngay_lap: true,
+    hien_thi_dap_an_dung: false,
+    cho_xem_lai_test: true,
   },
   // Reading Templates
   reading_basic: {
@@ -300,6 +306,9 @@ const templatePresets = {
     diem_tong_max: 100,
     so_lan_lam_toi_da: 3,
     diem_dat: 60,
+    hien_thi_ket_qua_ngay_lap: true,
+    hien_thi_dap_an_dung: false,
+    cho_xem_lai_test: true,
   },
   reading_advanced: {
     ten_bai_test: 'Reading Nâng Cao',
@@ -310,6 +319,9 @@ const templatePresets = {
     diem_tong_max: 200,
     so_lan_lam_toi_da: 2,
     diem_dat: 120,
+    hien_thi_ket_qua_ngay_lap: true,
+    hien_thi_dap_an_dung: false,
+    cho_xem_lai_test: true,
   },
   // Writing Templates
   writing_basic: {
@@ -321,6 +333,9 @@ const templatePresets = {
     diem_tong_max: 100,
     so_lan_lam_toi_da: 3,
     diem_dat: 60,
+    hien_thi_ket_qua_ngay_lap: true,
+    hien_thi_dap_an_dung: false,
+    cho_xem_lai_test: true,
   },
   writing_advanced: {
     ten_bai_test: 'Writing Nâng Cao',
@@ -331,6 +346,9 @@ const templatePresets = {
     diem_tong_max: 200,
     so_lan_lam_toi_da: 2,
     diem_dat: 120,
+    hien_thi_ket_qua_ngay_lap: true,
+    hien_thi_dap_an_dung: false,
+    cho_xem_lai_test: true,
   },
   // Mixed/Comprehensive Templates
   mixed_standard: {
@@ -342,6 +360,9 @@ const templatePresets = {
     diem_tong_max: 300,
     so_lan_lam_toi_da: 2,
     diem_dat: 180,
+    hien_thi_ket_qua_ngay_lap: true,
+    hien_thi_dap_an_dung: false,
+    cho_xem_lai_test: true,
   },
   mixed_comprehensive: {
     ten_bai_test: 'Test Năng Lực Toàn Diện',
@@ -352,6 +373,9 @@ const templatePresets = {
     diem_tong_max: 500,
     so_lan_lam_toi_da: 1,
     diem_dat: 300,
+    hien_thi_ket_qua_ngay_lap: true,
+    hien_thi_dap_an_dung: false,
+    cho_xem_lai_test: true,
   },
 };
 

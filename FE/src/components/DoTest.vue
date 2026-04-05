@@ -211,9 +211,13 @@ const stopAllAudio = () => {
   // Find and pause all audio elements on the page
   const allAudioElements = document.querySelectorAll('audio');
   allAudioElements.forEach(audio => {
-    if (!audio.paused) {
-      audio.pause();
+    try {
+      if (!audio.paused) {
+        audio.pause();
+      }
       audio.currentTime = 0;
+    } catch (e) {
+      console.warn('Error stopping audio:', e);
     }
   });
   isPlayingAudio.value = false;
@@ -257,7 +261,7 @@ const handleSubmit = async () => {
     const res = await submitTestApi(testId.value, payload);
     const score = res?.data?.diem_tong ?? res?.diem_tong ?? 'Chưa chấm';
     alert('Hoàn thành! Điểm của bạn: ' + score);
-    router.push({ name: 'TestResult', params: { id: testId.value } });
+    router.push({ name: 'TestResult', params: { id: testId.value } }).catch(e => console.error('Router push error:', e));
   } catch (err) {
     alert('Lỗi khi nộp bài: ' + (err.response?.data?.message || err.message));
   } finally {

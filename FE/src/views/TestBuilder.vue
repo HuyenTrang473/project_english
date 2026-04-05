@@ -553,15 +553,15 @@ const loadTest = async () => {
     if (preset) {
       try {
         const presetData = JSON.parse(preset);
-        // Normalize boolean values from preset
+        // Normalize boolean values from preset, but preserve form defaults if not in preset
         form.value = {
           ...form.value,
           ...presetData,
-          co_xao_tron_cau_hoi: !!presetData.co_xao_tron_cau_hoi,
-          co_xao_tron_dap_an: !!presetData.co_xao_tron_dap_an,
-          hien_thi_ket_qua_ngay_lap: !!presetData.hien_thi_ket_qua_ngay_lap,
-          hien_thi_dap_an_dung: !!presetData.hien_thi_dap_an_dung,
-          cho_xem_lai_test: !!presetData.cho_xem_lai_test,
+          co_xao_tron_cau_hoi: presetData.co_xao_tron_cau_hoi !== undefined ? !!presetData.co_xao_tron_cau_hoi : form.value.co_xao_tron_cau_hoi,
+          co_xao_tron_dap_an: presetData.co_xao_tron_dap_an !== undefined ? !!presetData.co_xao_tron_dap_an : form.value.co_xao_tron_dap_an,
+          hien_thi_ket_qua_ngay_lap: presetData.hien_thi_ket_qua_ngay_lap !== undefined ? !!presetData.hien_thi_ket_qua_ngay_lap : form.value.hien_thi_ket_qua_ngay_lap,
+          hien_thi_dap_an_dung: presetData.hien_thi_dap_an_dung !== undefined ? !!presetData.hien_thi_dap_an_dung : form.value.hien_thi_dap_an_dung,
+          cho_xem_lai_test: presetData.cho_xem_lai_test !== undefined ? !!presetData.cho_xem_lai_test : form.value.cho_xem_lai_test,
         };
         usingTemplate.value = true;
         templateName.value = presetName || 'Custom';

@@ -565,7 +565,7 @@ class BaiTestController extends Controller
                                 ]);
                             }
                         }
-                        
+
                         // IMPORTANT: Add the newly created question to the list of existing IDs
                         // so it's not immediately deleted by the cleanup routine below!
                         $existingQuestionIds[] = $question->id;
@@ -922,13 +922,11 @@ class BaiTestController extends Controller
         }
     }
 
-    /**
-     * Xem kết quả test (học sinh) - với filter hiển thị
-     */
     public function getResult($testId)
     {
         try {
             $userId = auth('sanctum')->id();
+
             $result = StudentTestResult::where('id_hoc_sinh', $userId)
                 ->where('id_bai_test', $testId)
                 ->whereIn('trang_thai', ['completed', 'pending_review', 'grading'])
@@ -944,55 +942,62 @@ class BaiTestController extends Controller
             }
 
             $test = BaiTest::find($testId);
-
-            // Check if student can review (allow if result is pending_review, or if test allows review)
-            // Also allow immediate viewing if test is configured to show results immediately
-            if (!$test->cho_xem_lai_test && !$test->hien_thi_ket_qua_ngay_lap && $result->trang_thai !== 'pending_review') {
+            if (!$test) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn không được phép xem lại bài test này',
-                ], 403);
+                    'message' => 'Bài test không tồn tại',
+                ], 404);
             }
 
-            $answers = $result->studentAnswerDetails()
-                ->with('cauHoi', 'dapAn')
-                ->get()
-                ->map(function ($answer) use ($test) {
-                    $data = [
-                        'id_cau_hoi' => $answer->id_cau_hoi,
-                        'noi_dung_cau_hoi' => $answer->cauHoi->noi_dung,
-                        'audio_url' => $answer->cauHoi->audio_url ? url($answer->cauHoi->audio_url) : null,
-                        'hinh_anh_url' => $answer->cauHoi->hinh_anh_url,
-                        'loai_cau_hoi' => $answer->cauHoi->loai_cau_hoi,
-                        'diem_max' => $answer->cauHoi->diem_max,
-                        'diem_tong' => $answer->diem_cau_hoi ?? 0,
-                        'dap_an_chon' => $answer->dapAn ? $answer->dapAn->noi_dung : $answer->cau_tra_loi_tu_do,
-                    ];
+            // Always return score summary; detailed review depends on test settings.
+            $canReviewDetails =
+                $test->cho_xem_lai_test
+                || $test->hien_thi_ket_qua_ngay_lap
+                || $result->trang_thai === 'pending_review';
 
-                    // Show correct answer if configured
-                    if ($test->hien_thi_dap_an_dung) {
-                        $correctAnswer = $answer->cauHoi->dapAns->firstWhere('la_dap_an_dung', true);
-                        $data['dap_an_dung'] = $correctAnswer ? $correctAnswer->noi_dung : null;
-                    }
+            $responseData = [
+                'id' => $result->id,
+                'diem_tong' => $result->diem_tong,
+                'so_cau_dung' => $result->so_cau_dung,
+                'so_cau_sai' => $result->so_cau_sai,
+                'so_cau_bo_trong' => $result->so_cau_bo_trong,
+                'thoi_gian_su_dung' => $result->thoi_gian_su_dung,
+                'lan_thu' => $result->lan_thu,
+                'thoi_gian_hoan_thanh' => $result->thoi_gian_hoan_thanh,
+                'trang_thai' => $result->trang_thai,
+                'chi_tiet_tung_cau' => [],
+            ];
 
-                    return $data;
-                });
+            if ($canReviewDetails) {
+                $answers = $result->studentAnswerDetails()
+                    ->with('cauHoi', 'dapAn')
+                    ->get()
+                    ->map(function ($answer) use ($test) {
+                        $data = [
+                            'id_cau_hoi' => $answer->id_cau_hoi,
+                            'noi_dung_cau_hoi' => $answer->cauHoi->noi_dung,
+                            'audio_url' => $answer->cauHoi->audio_url ? url($answer->cauHoi->audio_url) : null,
+                            'hinh_anh_url' => $answer->cauHoi->hinh_anh_url,
+                            'loai_cau_hoi' => $answer->cauHoi->loai_cau_hoi,
+                            'diem_max' => $answer->cauHoi->diem_max,
+                            'diem_tong' => $answer->diem_cau_hoi ?? 0,
+                            'dap_an_chon' => $answer->dapAn ? $answer->dapAn->noi_dung : $answer->cau_tra_loi_tu_do,
+                        ];
+
+                        if ($test->hien_thi_dap_an_dung) {
+                            $correctAnswer = $answer->cauHoi->dapAns->firstWhere('la_dap_an_dung', true);
+                            $data['dap_an_dung'] = $correctAnswer ? $correctAnswer->noi_dung : null;
+                        }
+
+                        return $data;
+                    });
+
+                $responseData['chi_tiet_tung_cau'] = $answers;
+            }
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'id' => $result->id,
-                    'diem_tong' => $result->diem_tong,
-                    'so_cau_dung' => $result->so_cau_dung,
-                    'so_cau_sai' => $result->so_cau_sai,
-                    'so_cau_bo_trong' => $result->so_cau_bo_trong,
-                    'thoi_gian_su_dung' => $result->thoi_gian_su_dung,
-                    'lan_thu' => $result->lan_thu,
-                    'trang_thai' => $result->trang_thai,
-                    'ghi_chu_giao_vien' => $result->ghi_chu_giao_vien,
-                    'thoi_gian_hoan_thanh' => $result->thoi_gian_hoan_thanh,
-                    'chi_tiet_tung_cau' => $answers,
-                ],
+                'data' => $responseData,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
