@@ -1,16 +1,15 @@
 FROM php:8.2-apache
 
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-ENV PORT=${PORT:-10000}
+ENV PORT=10000
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git curl unzip libzip-dev \
     && docker-php-ext-install pdo pdo_mysql zip \
     && a2enmod rewrite \
-    && sed -i 's/Listen 80/Listen ${PORT}/g' /etc/apache2/ports.conf \
-    && sed -i "s!<VirtualHost \*:80>!<VirtualHost *:\${PORT}>!" /etc/apache2/sites-available/000-default.conf \
     && sed -i "s!/var/www/html!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/sites-available/000-default.conf \
+    && echo "ServerName localhost" >> /etc/apache2/apache2.conf \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -35,7 +34,7 @@ RUN php artisan storage:link || true
 # Tối ưu quyền hạn một lần nữa cho chắc chắn
 RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-EXPOSE ${PORT:-10000}
+EXPOSE 10000
 
 # Khởi chạy qua entrypoint script (chạy migrations & Apache)
 CMD ["/usr/local/bin/entrypoint.sh"]
