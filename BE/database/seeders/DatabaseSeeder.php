@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             LessonSeeder::class,
             CourseEnrollmentSeeder::class,
             BaiTestSeeder::class,
+            EnglishTestSampleSeeder::class,
         ]);
     }
 }

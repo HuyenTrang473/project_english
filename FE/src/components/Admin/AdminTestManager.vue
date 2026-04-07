@@ -107,7 +107,7 @@
                 <div class="modal-body">
                     <form @submit.prevent="saveTest">
                         <!-- Teacher Selection -->
-                        <div class="form-group">
+                        <div v-if="isAdmin" class="form-group">
                             <label>Giáo viên *</label>
                             <select v-model="formData.id_giao_vien" class="form-input" required>
                                 <option value="">-- Chọn giáo viên --</option>
@@ -118,6 +118,10 @@
                             <span v-if="errors.id_giao_vien" class="error-message">
                                 {{ errors.id_giao_vien[0] }}
                             </span>
+                        </div>
+                        <div v-else class="form-group">
+                            <label>Giáo viên</label>
+                            <input :value="authStore.user?.name || 'Bạn'" type="text" class="form-input" disabled />
                         </div>
 
                         <!-- Lesson Selection -->
@@ -251,9 +255,14 @@
 
 <script>
 import http from '@/api/axiosClient';
+import { useAuthStore } from '@/stores/auth';
 
 export default {
     name: 'AdminTestManager',
+    setup() {
+        const authStore = useAuthStore();
+        return { authStore };
+    },
     data() {
         return {
             tests: [],
@@ -293,7 +302,17 @@ export default {
         this.loadTeachers();
         this.loadLessons();
     },
+    computed: {
+        isAdmin() {
+            return this.authStore?.isAdmin;
+        },
+    },
     methods: {
+        normalizeDateTime(value) {
+            if (!value) return null;
+            // Convert datetime-local format (YYYY-MM-DDTHH:mm) to backend format (YYYY-MM-DD HH:mm:ss)
+            return `${value.replace('T', ' ')}:00`;
+        },
         async loadTests() {
             this.loading = true;
             this.error = null;
@@ -306,9 +325,11 @@ export default {
                         per_page: 15,
                     },
                 });
-                if (response.data.success) {
-                    this.tests = response.data.data;
-                    this.pagination = response.data.pagination;
+                if (response.success) {
+                    this.tests = response.data || [];
+                    this.pagination = response.pagination || null;
+                } else {
+                    this.error = response?.message || 'Lỗi khi tải danh sách đề thi';
                 }
             } catch (err) {
                 this.error = 'Lỗi khi tải danh sách đề thi';
@@ -318,10 +339,14 @@ export default {
             }
         },
         async loadTeachers() {
+            if (!this.isAdmin) {
+                this.teachers = this.authStore?.user ? [this.authStore.user] : [];
+                return;
+            }
             try {
                 const response = await http.get('/admin/teachers');
-                if (response.data && response.data.data) {
-                    this.teachers = response.data.data;
+                if (response?.success && response?.data) {
+                    this.teachers = response.data;
                 }
             } catch (err) {
                 console.error('Lỗi khi tải danh sách giáo viên:', err);
@@ -330,8 +355,8 @@ export default {
         async loadLessons() {
             try {
                 const response = await http.get('/admin/lessons');
-                if (response.data && response.data.data && response.data.data.length > 0) {
-                    this.lessons = response.data.data;
+                if (response?.success && Array.isArray(response?.data)) {
+                    this.lessons = response.data;
                 }
             } catch (err) {
                 console.error('Lỗi khi tải danh sách bài học:', err);
@@ -394,7 +419,7 @@ export default {
         },
         resetForm() {
             this.formData = {
-                id_giao_vien: '',
+                id_giao_vien: this.isAdmin ? '' : this.authStore?.user?.id,
                 id_lesson: '',
                 ten_bai_test: '',
                 mo_ta: '',
@@ -416,26 +441,34 @@ export default {
             this.submitting = true;
             this.errors = {};
             try {
+                const teacherId = this.isAdmin ? this.formData.id_giao_vien : this.authStore?.user?.id;
                 const payload = {
                     ...this.formData,
-                    id_giao_vien: parseInt(this.formData.id_giao_vien),
+                    id_giao_vien: parseInt(teacherId),
                     id_lesson: parseInt(this.formData.id_lesson),
                     thoi_gian_toi_da: parseInt(this.formData.thoi_gian_toi_da),
                     diem_tong_max: parseFloat(this.formData.diem_tong_max),
                     trang_thai: parseInt(this.formData.trang_thai),
                     so_lan_lam_toi_da: parseInt(this.formData.so_lan_lam_toi_da),
+                    ngay_bat_dau: this.normalizeDateTime(this.formData.ngay_bat_dau),
+                    ngay_ket_thuc: this.normalizeDateTime(this.formData.ngay_ket_thuc),
                 };
+
+                if (!Number.isInteger(payload.id_giao_vien) || !Number.isInteger(payload.id_lesson)) {
+                    alert('Vui lòng chọn đầy đủ giáo viên và bài học.');
+                    return;
+                }
 
                 if (this.isEditMode) {
                     const response = await http.put(`/admin/tests/${this.currentEditId}`, payload);
-                    if (response.data.success) {
+                    if (response.success) {
                         alert('Cập nhật đề thi thành công!');
                         this.closeDialog();
                         this.loadTests();
                     }
                 } else {
                     const response = await http.post('/admin/tests', payload);
-                    if (response.data.success) {
+                    if (response.success) {
                         alert('Tạo mới đề thi thành công!');
                         this.closeDialog();
                         this.loadTests();
@@ -457,7 +490,7 @@ export default {
             }
             try {
                 const response = await http.delete(`/admin/tests/${testId}`);
-                if (response.data.success) {
+                if (response.success) {
                     alert('Xóa đề thi thành công!');
                     this.loadTests();
                 }

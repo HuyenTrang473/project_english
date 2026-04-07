@@ -18,8 +18,15 @@
                     <router-link to="/home" class="list-group-item list-group-item-action bg-transparent">
                         <i class="fa-solid fa-chart-column me-2" aria-hidden="true"></i>Dashboard
                     </router-link>
-                    <router-link to="/tests" class="list-group-item list-group-item-action bg-transparent">
+                    <router-link to="/admin/lessons" class="list-group-item list-group-item-action bg-transparent">
+                        <i class="fa-solid fa-book me-2" aria-hidden="true"></i>Quản lý Bài học
+                    </router-link>
+                    <router-link to="/admin/tests" class="list-group-item list-group-item-action bg-transparent">
                         <i class="fa-solid fa-file-lines me-2" aria-hidden="true"></i>Quản lý Đề thi
+                    </router-link>
+                    <router-link v-if="authStore.isAdmin" to="/admin/teachers"
+                        class="list-group-item list-group-item-action bg-transparent">
+                        <i class="fa-solid fa-chalkboard-user me-2" aria-hidden="true"></i>Quản lý Giáo viên
                     </router-link>
                     <!-- Add more admin links here -->
                 </div>

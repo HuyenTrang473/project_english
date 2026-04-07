@@ -34,8 +34,8 @@ class BaiTestController extends Controller
                 $query->published();
             }
 
-            // Filter by name/search
-            if ($request->has('search') && $request->search) {
+            // Filter by test name only
+            if ($request->filled('search')) {
                 $query->where('ten_bai_test', 'like', '%' . $request->search . '%');
             }
 
@@ -45,8 +45,11 @@ class BaiTestController extends Controller
             }
 
             // Sorting
-            $sortBy = $request->get('sort_by', 'created_at');
-            $sortOrder = $request->get('sort_order', 'desc');
+            $allowedSortColumns = ['created_at', 'updated_at', 'ten_bai_test', 'thoi_gian_toi_da', 'diem_tong_max'];
+            $sortBy = in_array($request->get('sort_by', 'created_at'), $allowedSortColumns, true)
+                ? $request->get('sort_by', 'created_at')
+                : 'created_at';
+            $sortOrder = strtolower((string) $request->get('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
             $query->orderBy($sortBy, $sortOrder);
 
             // Pagination

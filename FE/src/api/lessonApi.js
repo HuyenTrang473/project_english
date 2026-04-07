@@ -48,6 +48,11 @@ export function getMyLessons(filters = {}) {
   return http.get("/teacher/lessons", { params: filters });
 }
 
+/** Danh sách bài học toàn hệ thống (admin/teacher) */
+export function getAdminLessons(filters = {}) {
+  return http.get("/admin/lessons", { params: filters });
+}
+
 /** Lấy chi tiết bài học để edit (teacher) */
 export function getLessonForEdit(id) {
   return http.get(`/lessons/${id}/edit`);

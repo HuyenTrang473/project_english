@@ -123,7 +123,9 @@ export default {
         let response;
         console.log('Loading lessons... isTeacher:', this.isTeacher, 'authenticated:', this.authStore.isAuthenticated);
 
-        if (this.isTeacher) {
+        if (this.authStore.isAdmin) {
+          response = await lessonApi.getAdminLessons();
+        } else if (this.isTeacher) {
           // Teachers see all their lessons (draft + published)
           try {
             response = await lessonApi.getMyLessons();

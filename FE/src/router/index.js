@@ -38,6 +38,36 @@ const routes = [
     },
     children: [],
   },
+  {
+    path: "/admin/lessons",
+    name: "AdminLessonManagement",
+    component: () => import("@/views/LessonList.vue"),
+    meta: {
+      layout: "admin",
+      requiresAuth: true,
+      roles: ["admin", "giao_vien"],
+    },
+  },
+  {
+    path: "/admin/tests",
+    name: "AdminTestManagement",
+    component: () => import("@/components/Admin/AdminTestManager.vue"),
+    meta: {
+      layout: "admin",
+      requiresAuth: true,
+      roles: ["admin", "giao_vien"],
+    },
+  },
+  {
+    path: "/admin/teachers",
+    name: "AdminTeacherManagement",
+    component: () => import("@/components/Admin/AdminTeacherManager.vue"),
+    meta: {
+      layout: "admin",
+      requiresAuth: true,
+      roles: ["admin"],
+    },
+  },
   // Teacher Routes
   {
     path: "/teacher/dashboard",
@@ -50,7 +80,7 @@ const routes = [
     path: "/tests",
     name: "TestList",
     component: () => import("@/views/TestList.vue"),
-    meta: { layout: "admin", requiresAuth: true },
+    meta: { layout: "client", requiresAuth: false },
   },
   {
     path: "/tests/create-template",
@@ -130,8 +160,8 @@ const routes = [
   // Lesson Routes
   {
     path: "/lessons",
-    name: "LessonList",
-    component: () => import("@/views/LessonList.vue"),
+    name: "CourseList",
+    component: () => import("@/views/CourseList.vue"),
     meta: { layout: "client", requiresAuth: false },
   },
   // Specific routes BEFORE generic :id route

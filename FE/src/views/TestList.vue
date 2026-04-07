@@ -1,312 +1,164 @@
-<template>
-  <div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-      <h1 class="mb-0"><i class="fa fa-list-alt"></i> Danh Sách Bài Test</h1>
-
-      <!-- Action Buttons -->
-      <div class="d-flex gap-2 flex-wrap">
-        <!-- View Mode Toggle -->
-        <div class="btn-group" role="group">
-          <button type="button" :class="['btn', viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary']"
-            @click="viewMode = 'grid'" title="Xem dạng lưới">
-            <i class="fa fa-th"></i>
-          </button>
-          <button type="button" :class="['btn', viewMode === 'list' ? 'btn-primary' : 'btn-outline-secondary']"
-            @click="viewMode = 'list'" title="Xem dạng danh sách">
-            <i class="fa fa-list"></i>
-          </button>
+﻿<template>
+  <section class="tests-page py-5">
+    <div class="container">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4">
+        <div class="mb-3 mb-md-0">
+          <span class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill mb-2 fw-semibold">Skill
+            Assessment</span>
+          <h1 class="h2 fw-bold mb-2 text-dark">All Published Tests</h1>
+          <p class="text-muted mb-0">Danh sach tat ca bai test da publish, giao dien giong trang chu.</p>
         </div>
-
-        <!-- Refresh Button -->
-        <button @click="refreshData" :disabled="loading" class="btn btn-outline-secondary" title="Tải lại dữ liệu">
-          <i :class="['fa fa-refresh', { 'fa-spin': loading }]"></i>
-        </button>
-
-        <!-- Export Button -->
-        <button @click="exportData" :disabled="tests.length === 0" class="btn btn-outline-info"
-          title="Xuất dữ liệu CSV">
-          <i class="fa fa-download"></i> Xuất
-        </button>
-
-        <!-- Settings Button -->
-        <button @click="showSettings = !showSettings" class="btn btn-outline-secondary" title="Cài đặt">
-          <i class="fa fa-cog"></i>
-        </button>
-
-        <!-- Create New Test Button -->
-        <router-link v-if="isTeacher || isAdmin" to="/tests/create-template" class="btn btn-primary">
-          <i class="fa fa-plus"></i> Tạo Mới
+        <router-link to="/" class="btn btn-outline-primary rounded-pill px-4 fw-medium">
+          <i class="fa-solid fa-arrow-left me-2"></i> Back To Home
         </router-link>
       </div>
-    </div>
 
-    <!-- Settings Panel -->
-    <div v-if="showSettings" class="alert alert-light border mb-4">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h6 class="mb-0"><i class="fa fa-cogs"></i> Cài đặt hiển thị</h6>
-        <button @click="showSettings = false" class="btn-close"></button>
-      </div>
-      <div class="row g-3">
-        <div class="col-md-3">
-          <label class="form-label">Số bản ghi/trang</label>
-          <select v-model.number="pageSize" class="form-select form-select-sm" @change="updatePageSize">
-            <option value="10">10</option>
-            <option value="15">15</option>
-            <option value="20">20</option>
-            <option value="30">30</option>
-          </select>
-        </div>
-        <div class="col-md-9">
-          <label class="form-label">Hiển thị thông tin</label>
-          <div class="d-flex gap-2 flex-wrap">
-            <div class="form-check">
-              <input type="checkbox" class="form-check-input" id="showTeacher" v-model="showInfo.teacher">
-              <label class="form-check-label" for="showTeacher">Giáo viên</label>
-            </div>
-            <div class="form-check">
-              <input type="checkbox" class="form-check-input" id="showTime" v-model="showInfo.time">
-              <label class="form-check-label" for="showTime">Thời gian</label>
-            </div>
-            <div class="form-check">
-              <input type="checkbox" class="form-check-input" id="showScore" v-model="showInfo.score">
-              <label class="form-check-label" for="showScore">Điểm</label>
-            </div>
-            <div class="form-check">
-              <input type="checkbox" class="form-check-input" id="showStatus" v-model="showInfo.status">
-              <label class="form-check-label" for="showStatus">Trạng thái</label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="card mb-4">
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <input v-model="filters.search" type="text" class="form-control" placeholder="Tìm kiếm theo tên bài test..."
-              @input="onSearchChange">
-          </div>
-          <div class="col-md-3">
-            <select v-model="filters.status" class="form-select" @change="onFilterChange">
-              <option :value="null">Tất cả trạng thái</option>
-              <option value="1">Nháp</option>
-              <option value="2">Đã Công Bố</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <select v-model="filters.sortBy" class="form-select" @change="onFilterChange">
-              <option value="created_at">Mới Nhất</option>
-              <option value="ten_bai_test">Tên (A-Z)</option>
-              <option value="updated_at">Cập Nhật Gần Đây</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="loading" class="text-center">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Đang tải...</span>
-      </div>
-    </div>
-
-    <!-- Empty State -->
-    <div v-else-if="tests.length === 0" class="alert alert-info text-center">
-      <i class="fa fa-inbox"></i> Không có bài test nào
-    </div>
-
-    <!-- Tests List - Grid View -->
-    <div v-if="!loading && tests.length > 0 && viewMode === 'grid'" class="row">
-      <div v-for="test in tests" :key="test.id" class="col-md-6 col-lg-4 mb-4">
-        <div class="card h-100 shadow-sm hover-card">
-          <!-- Card Header -->
-          <div class="card-header bg-primary text-white p-3">
-            <h5 class="card-title mb-0 text-truncate">{{ test.ten_bai_test }}</h5>
-          </div>
-
-          <!-- Card Body -->
-          <div class="card-body">
-            <!-- Test Info -->
-            <div class="mb-3">
-              <p v-if="showInfo.teacher" class="text-muted small mb-1">
-                <i class="fa fa-user"></i> {{ test.giao_vien?.name || 'Unknown' }}
-              </p>
-              <p v-if="showInfo.time" class="text-muted small mb-2">
-                <i class="fa fa-clock"></i>
-                {{ test.thoi_gian_toi_da }} phút
-              </p>
-              <p v-if="showInfo.score" class="text-muted small mb-0">
-                <i class="fa fa-trophy"></i>
-                Điểm tối đa: {{ test.diem_tong_max }} điểm
-              </p>
-            </div>
-
-            <!-- Description -->
-            <p class="card-text small">{{ truncate(test.mo_ta, 80) }}</p>
-
-            <!-- Status Badge -->
-            <div v-if="showInfo.status" class="mb-3">
-              <span :class="[
-                'badge',
-                test.trang_thai === 2 ? 'bg-success' : 'bg-secondary'
-              ]">
-                <i :class="test.trang_thai === 2 ? 'fa fa-check' : 'fa fa-pencil'"></i>
-                {{ test.trang_thai === 2 ? ' Công Bố' : ' Nháp' }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Card Footer -->
-          <div class="card-footer bg-light p-3">
-            <div class="d-flex gap-2 flex-wrap">
-              <router-link :to="`/tests/${test.id}/view`" class="btn btn-sm btn-info flex-grow-1">
-                <i class="fa fa-eye"></i> Xem
-              </router-link>
-
-              <router-link v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)" :to="`/tests/${test.id}/edit`"
-                class="btn btn-sm btn-warning" title="Chỉnh sửa">
-                <i class="fa fa-edit"></i>
-              </router-link>
-
-              <button v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)" @click="onDeleteTest(test.id)"
-                class="btn btn-sm btn-danger" :disabled="loading" title="Xóa">
-                <i class="fa fa-trash"></i>
-              </button>
-
-
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tests List - List View -->
-    <div v-if="!loading && tests.length > 0 && viewMode === 'list'" class="table-responsive">
-      <table class="table table-hover table-striped">
-        <thead class="table-dark sticky-top">
-          <tr>
-            <th>Tên Bài Test</th>
-            <th v-if="showInfo.teacher">Giáo Viên</th>
-            <th v-if="showInfo.time">Thời Gian</th>
-            <th v-if="showInfo.score">Điểm</th>
-            <th v-if="showInfo.status">Trạng Thái</th>
-            <th class="text-center">Thao Tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="test in tests" :key="test.id">
-            <td>
-              <strong>{{ test.ten_bai_test }}</strong>
-              <br>
-              <small class="text-muted">{{ truncate(test.mo_ta, 50) }}</small>
-            </td>
-            <td v-if="showInfo.teacher" class="text-muted small">
-              {{ test.giao_vien?.name || 'Unknown' }}
-            </td>
-            <td v-if="showInfo.time" class="text-muted small">
-              {{ test.thoi_gian_toi_da }} phút
-            </td>
-            <td v-if="showInfo.score" class="text-muted small">
-              {{ test.diem_tong_max }} điểm
-            </td>
-            <td v-if="showInfo.status">
-              <span :class="[
-                'badge',
-                test.trang_thai === 2 ? 'bg-success' : 'bg-secondary'
-              ]">
-                <i :class="test.trang_thai === 2 ? 'fa fa-check' : 'fa fa-pencil'"></i>
-                {{ test.trang_thai === 2 ? ' Công Bố' : ' Nháp' }}
-              </span>
-            </td>
-            <td class="text-center">
-              <div class="btn-group btn-group-sm" role="group">
-                <router-link :to="`/tests/${test.id}/view`" class="btn btn-info" title="Xem">
-                  <i class="fa fa-eye"></i>
-                </router-link>
-
-                <router-link v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)" :to="`/tests/${test.id}/edit`"
-                  class="btn btn-warning" title="Chỉnh sửa">
-                  <i class="fa fa-edit"></i>
-                </router-link>
-
-                <button v-if="(isTeacher || isAdmin) && isOwner(test.id_giao_vien)" @click="onDeleteTest(test.id)"
-                  class="btn btn-danger" :disabled="loading" title="Xóa">
-                  <i class="fa fa-trash"></i>
+      <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-12 col-md-7">
+              <div class="input-group search-group">
+                <span class="input-group-text bg-white border-end-0 rounded-start-pill">
+                  <i class="fas fa-search text-muted"></i>
+                </span>
+                <input v-model.trim="search" type="text" class="form-control border-start-0 border-end-0"
+                  placeholder="Tim theo ten test, mo ta, loai quiz, ten giao vien..." @input="onSearchInput"
+                  @keyup.enter="searchNow">
+                <button v-if="search" class="btn btn-outline-secondary border-start-0 rounded-end-pill" type="button"
+                  @click="clearSearch">
+                  Xoa
                 </button>
-
-
+                <span v-else class="input-group-text bg-white border-start-0 rounded-end-pill">
+                  <i class="fas fa-keyboard text-muted"></i>
+                </span>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+            <div class="col-12 col-md-3">
+              <select v-model="sortBy" class="form-select rounded-pill px-3" @change="loadTests(1)">
+                <option value="created_at">Moi nhat</option>
+                <option value="ten_bai_test">Ten A-Z</option>
+                <option value="thoi_gian_toi_da">Thoi gian lam bai</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-2">
+              <select v-model.number="perPage" class="form-select rounded-pill px-3" @change="loadTests(1)">
+                <option :value="6">6 / page</option>
+                <option :value="9">9 / page</option>
+                <option :value="12">12 / page</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="lastKeyword" class="small text-muted mb-4">
+        Tim thay {{ pagination.total || tests.length }} ket qua cho "{{ lastKeyword }}"
+      </div>
+
+      <div v-if="loading" class="text-center py-5 text-muted">
+        Dang tai bai test...
+      </div>
+
+      <div v-else-if="tests.length === 0" class="text-center py-5">
+        <div class="bg-light p-5 rounded-4 border border-dashed">
+          <p class="text-muted fs-5 mb-0">
+            {{ lastKeyword ? 'Khong tim thay bai test phu hop voi tu khoa.' : 'Hien tai chua co bai test duoc cong bo.'
+            }}
+          </p>
+        </div>
+      </div>
+
+      <div v-else class="row g-4">
+        <div v-for="test in tests" :key="test.id" class="col-md-6 col-lg-4">
+          <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden test-card bg-white">
+            <div class="card-body p-4 d-flex flex-column">
+              <div class="d-flex align-items-center gap-2 mb-4">
+                <span
+                  class="badge bg-soft-success text-success rounded-pill px-3 py-2 fw-medium border border-success border-opacity-25">
+                  <i class="fas fa-clock me-1"></i>{{ test.thoi_gian_toi_da }} mins
+                </span>
+                <span
+                  class="badge bg-soft-primary text-primary rounded-pill px-3 py-2 fw-medium border border-primary border-opacity-25">
+                  <i class="fas fa-star me-1"></i>Max {{ test.diem_tong_max }} pts
+                </span>
+              </div>
+
+              <h5 class="card-title fw-bold mb-3 text-dark">{{ test.ten_bai_test }}</h5>
+              <p class="card-text text-muted small mb-4 flex-grow-1 lh-lg">
+                {{ test.mo_ta || 'General English assessment to help build your perfect learning path.' }}
+              </p>
+
+              <div class="d-flex align-items-center justify-content-between mt-auto pt-3 border-top border-light">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="bg-light rounded-circle d-flex align-items-center justify-content-center"
+                    style="width: 32px; height: 32px;">
+                    <i class="fas fa-user text-secondary small"></i>
+                  </div>
+                  <span class="text-dark fw-medium small">{{ test.giao_vien?.name || 'Tutor' }}</span>
+                </div>
+                <button class="btn btn-primary btn-sm rounded-pill px-4 py-2 fw-semibold shadow-sm"
+                  @click="goToTest(test.id)">
+                  <i class="fas fa-play me-2"></i> Take Test
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <nav v-if="pagination.last_page > 1" class="mt-5">
+        <ul class="pagination justify-content-center mb-0">
+          <li class="page-item" :class="{ disabled: pagination.current_page === 1 }">
+            <button class="page-link" :disabled="pagination.current_page === 1"
+              @click="loadTests(pagination.current_page - 1)">
+              Previous
+            </button>
+          </li>
+
+          <li v-for="page in pageNumbers" :key="page" class="page-item"
+            :class="{ active: page === pagination.current_page }">
+            <button class="page-link" @click="loadTests(page)">{{ page }}</button>
+          </li>
+
+          <li class="page-item" :class="{ disabled: pagination.current_page === pagination.last_page }">
+            <button class="page-link" :disabled="pagination.current_page === pagination.last_page"
+              @click="loadTests(pagination.current_page + 1)">
+              Next
+            </button>
+          </li>
+        </ul>
+      </nav>
     </div>
-
-    <!-- Pagination -->
-    <nav v-if="pagination.lastPage > 1" class="mt-4">
-      <ul class="pagination justify-content-center">
-        <li :class="['page-item', { disabled: pagination.currentPage === 1 }]">
-          <button class="page-link" @click="goToPage(pagination.currentPage - 1)"
-            :disabled="pagination.currentPage === 1">
-            Trước
-          </button>
-        </li>
-
-        <li v-for="page in pageNumbers" :key="page" :class="['page-item', { active: page === pagination.currentPage }]">
-          <button class="page-link" @click="goToPage(page)">
-            {{ page }}
-          </button>
-        </li>
-
-        <li :class="['page-item', { disabled: pagination.currentPage === pagination.lastPage }]">
-          <button class="page-link" @click="goToPage(pagination.currentPage + 1)"
-            :disabled="pagination.currentPage === pagination.lastPage">
-            Tiếp
-          </button>
-        </li>
-      </ul>
-    </nav>
-  </div>
+  </section>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useTestStore } from "@/stores/test";
 import { useAuthStore } from "@/stores/auth";
+import { getAllTests } from "@/api/testApi";
 
 const router = useRouter();
-const testStore = useTestStore();
 const authStore = useAuthStore();
 
-// State
+const tests = ref([]);
+const loading = ref(false);
+const search = ref("");
+const sortBy = ref("created_at");
+const perPage = ref(12);
 const searchTimeout = ref(null);
-const viewMode = ref('grid'); // 'grid' or 'list'
-const showSettings = ref(false);
-const pageSize = ref(15);
-const showInfo = ref({
-  teacher: true,
-  time: true,
-  score: true,
-  status: true
+const lastKeyword = ref("");
+
+const pagination = ref({
+  total: 0,
+  per_page: 12,
+  current_page: 1,
+  last_page: 1,
 });
 
-// Computed
-const tests = computed(() => testStore.tests);
-const loading = computed(() => testStore.loading);
-const pagination = computed(() => testStore.pagination);
-const filters = computed(() => testStore.filters);
-const isTeacher = computed(() => authStore.user?.role === "giao_vien");
-const isAdmin = computed(() => authStore.user?.role === "admin");
-
-// Pagination Numbers
 const pageNumbers = computed(() => {
-  const total = pagination.value.lastPage;
-  const current = pagination.value.currentPage;
+  const total = pagination.value.last_page || 1;
+  const current = pagination.value.current_page || 1;
   const max = 5;
 
   let start = Math.max(1, current - Math.floor(max / 2));
@@ -319,207 +171,99 @@ const pageNumbers = computed(() => {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 });
 
-// Methods
-const truncate = (text, length) => {
-  if (!text) return "";
-  return text.length > length ? text.substring(0, length) + "..." : text;
-};
+const loadTests = async (page = 1) => {
+  loading.value = true;
+  try {
+    const keyword = search.value.trim();
+    lastKeyword.value = keyword;
 
-const isOwner = (teacherId) => {
-  return authStore.user?.role === 'admin' || authStore.user?.id === teacherId;
-};
+    const res = await getAllTests({
+      status: 2,
+      search: keyword || undefined,
+      sort_by: sortBy.value,
+      sort_order: "desc",
+      per_page: perPage.value,
+      page,
+    });
 
-const onSearchChange = () => {
-  clearTimeout(searchTimeout.value);
-  searchTimeout.value = setTimeout(() => {
-    testStore.updateFilters({ search: filters.value.search });
-    fetchData();
-  }, 500);
-};
-
-const onFilterChange = () => {
-  testStore.updateFilters(filters.value);
-  fetchData();
-};
-
-const fetchData = async () => {
-  await testStore.fetchAllTests(filters.value);
-};
-
-const goToPage = (page) => {
-  testStore.updateFilters({
-    ...filters.value,
-    currentPage: page
-  });
-  fetchData();
-};
-
-const onDeleteTest = async (testId) => {
-  if (confirm("Bạn chắc chắn muốn xóa bài test này?")) {
-    try {
-      await testStore.deleteTest(testId);
-      alert("Xóa bài test thành công!");
-    } catch (err) {
-      alert("Lỗi: " + testStore.error);
-    }
+    tests.value = res.data || [];
+    pagination.value = res.pagination || {
+      total: tests.value.length,
+      per_page: perPage.value,
+      current_page: page,
+      last_page: 1,
+    };
+  } catch (error) {
+    console.error("Failed to load tests", error);
+    tests.value = [];
+  } finally {
+    loading.value = false;
   }
 };
 
-const refreshData = async () => {
-  await fetchData();
+const onSearchInput = () => {
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value);
+  }
+
+  searchTimeout.value = setTimeout(() => {
+    loadTests(1);
+  }, 400);
 };
 
-const exportData = () => {
-  if (tests.value.length === 0) {
-    alert("Không có dữ liệu để xuất");
+const searchNow = () => {
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value);
+  }
+  loadTests(1);
+};
+
+const clearSearch = () => {
+  search.value = "";
+  searchNow();
+};
+
+const goToTest = (testId) => {
+  if (!authStore.isAuthenticated) {
+    router.push({ name: "Login", query: { redirect: `/test/${testId}` } });
     return;
   }
 
-  // Prepare CSV data
-  const headers = ['ID', 'Tên Bài Test', 'Giáo Viên', 'Thời Gian (phút)', 'Điểm Tối Đa', 'Trạng Thái', 'Ngày Tạo'];
-  const rows = tests.value.map(test => [
-    test.id,
-    test.ten_bai_test,
-    test.giao_vien?.name || 'Unknown',
-    test.thoi_gian_toi_da,
-    test.diem_tong_max,
-    test.trang_thai === 2 ? 'Công Bố' : 'Nháp',
-    new Date(test.created_at).toLocaleDateString('vi-VN')
-  ]);
-
-  // Create CSV content
-  const csvContent = [
-    headers.join(','),
-    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-  ].join('\n');
-
-  // Create and download file
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  link.setAttribute('href', url);
-  link.setAttribute('download', `bai-test-${new Date().getTime()}.csv`);
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  router.push(`/test/${testId}`);
 };
 
-const updatePageSize = () => {
-  testStore.updateFilters({
-    ...filters.value,
-    perPage: pageSize.value,
-    currentPage: 1
-  });
-  fetchData();
-};
-
-// Lifecycle
 onMounted(() => {
-  fetchData();
+  loadTests(1);
 });
 </script>
 
 <style scoped>
-.hover-card {
-  transition: transform 0.2s, box-shadow 0.2s;
+.tests-page {
+  min-height: 70vh;
 }
 
-.hover-card:hover {
+.test-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.test-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.08) !important;
 }
 
-.card-header {
-  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+.bg-soft-primary {
+  background-color: rgba(13, 110, 253, 0.08) !important;
 }
 
-.text-truncate {
-  max-width: 100%;
+.bg-soft-success {
+  background-color: rgba(25, 135, 84, 0.08) !important;
 }
 
-/* Button Group Styles */
-.btn-group-sm .btn {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.85rem;
+.border-dashed {
+  border-style: dashed !important;
 }
 
-/* Table Responsive */
-.table-responsive {
-  border-radius: 0.5rem;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.table {
-  margin-bottom: 0;
-}
-
-.table thead th {
-  font-weight: 600;
-  padding: 0.75rem;
-  vertical-align: middle;
-}
-
-.table tbody td {
-  padding: 0.75rem;
-  vertical-align: middle;
-}
-
-.table tbody tr:hover {
-  background-color: #f8f9fa;
-}
-
-/* Settings Panel */
-.btn-close {
-  padding: 0;
-  background-color: transparent;
-  border: 0;
-  opacity: 0.7;
-}
-
-.btn-close:hover {
-  opacity: 1;
-}
-
-/* View Mode Toggle */
-.btn-group .btn {
-  margin: 0 2px;
-}
-
-/* Spinner Animation */
-.fa-spin {
-  animation: fa-spin 2s infinite linear;
-}
-
-@keyframes fa-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .d-flex.flex-wrap gap-2 {
-    flex-direction: column;
-  }
-
-  .btn,
-  .btn-group {
-    width: 100%;
-  }
-
-  .table {
-    font-size: 0.9rem;
-  }
-
-  .table thead th,
-  .table tbody td {
-    padding: 0.5rem;
-  }
+.search-group .form-control:focus {
+  box-shadow: none;
 }
 </style>

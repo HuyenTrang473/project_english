@@ -237,13 +237,9 @@ class LessonController extends Controller
                 $query->where('trang_thai', $request->status);
             }
 
-            // Filter by search term
+            // Filter by search term - title only
             if ($request->has('search')) {
-                $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->where('tieu_de', 'like', "%$search%")
-                        ->orWhere('mo_ta', 'like', "%$search%");
-                });
+                $query->where('tieu_de', 'like', "%{$request->search}%");
             }
 
             // Sort
@@ -309,13 +305,9 @@ class LessonController extends Controller
         try {
             $query = Lesson::where('id_giao_vien', $teacherId)->published();
 
-            // Search filter
+            // Search filter - title only
             if ($request->has('search')) {
-                $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->where('tieu_de', 'like', "%$search%")
-                        ->orWhere('mo_ta', 'like', "%$search%");
-                });
+                $query->where('tieu_de', 'like', "%{$request->search}%");
             }
 
             // Sort
@@ -345,18 +337,9 @@ class LessonController extends Controller
         try {
             $query = Lesson::published();
 
-            // Search by title or description
+            // Search by title only
             if ($request->has('search')) {
-                $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->where('tieu_de', 'like', "%$search%")
-                        ->orWhere('mo_ta', 'like', "%$search%");
-                });
-            }
-
-            // Filter by teacher
-            if ($request->has('teacher_id')) {
-                $query->where('id_giao_vien', $request->teacher_id);
+                $query->where('tieu_de', 'like', "%{$request->search}%");
             }
 
             // Sort

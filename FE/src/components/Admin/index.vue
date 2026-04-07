@@ -96,8 +96,8 @@ export default {
             activeMenu: 'dashboard',
             allMenuItems: [
                 { key: 'dashboard', label: 'Dashboard', icon: 'fa-solid fa-gauge-high', route: null, adminOnly: false },
-                { key: 'lessons', label: 'Quản lý Bài học', icon: 'fa-solid fa-book', route: '/lessons', adminOnly: false },
-                { key: 'tests', label: 'Quản lý Đề thi', icon: 'fa-solid fa-file-lines', route: '/tests', adminOnly: false },
+                { key: 'lessons', label: 'Quản lý Bài học', icon: 'fa-solid fa-book', route: '/admin/lessons', adminOnly: false },
+                { key: 'tests', label: 'Quản lý Đề thi', icon: 'fa-solid fa-file-lines', route: '/admin/tests', adminOnly: false },
                 { key: 'teachers', label: 'Quản lý Giáo viên', icon: 'fa-solid fa-chalkboard-user', route: null, adminOnly: true },
             ],
             stats: {

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { getLessons } from '@/api/lessonApi';
 import { getListByLesson, getAllTests } from '@/api/testApi';
 import { useRouter } from 'vue-router';
@@ -11,6 +11,21 @@ const courses = ref([]);
 const publishedTests = ref([]);
 const loading = ref(true);
 const featuredTestId = ref(null);
+const animateCounters = ref(false);
+const statValues = ref({ students: 0, success: 0, tutors: 0 });
+
+const visibleCourses = computed(() => courses.value.slice(0, 3));
+const visibleTests = computed(() => publishedTests.value.slice(0, 3));
+
+const animateValue = (start, end, duration) => {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        return Math.floor(progress * (end - start) + start);
+    };
+    return step;
+};
 
 const resolveFeaturedTestId = async (lessons) => {
     if (!lessons || lessons.length === 0) {
@@ -103,7 +118,66 @@ const handleImageError = (event) => {
 
 onMounted(() => {
     fetchCourses();
+    observeScrollElements();
+    observeStatsSection();
 });
+
+const observeScrollElements = () => {
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animate-in');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    document.querySelectorAll('.scroll-animate').forEach(el => {
+        observer.observe(el);
+    });
+};
+
+const observeStatsSection = () => {
+    const statsSection = document.querySelector('.stats-row');
+    if (!statsSection) return;
+
+    const observerOptions = { threshold: 0.5 };
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !animateCounters.value) {
+                animateCounters.value = true;
+                animateCounter('.stat-students', 10000, 2000);
+                animateCounter('.stat-success', 98, 2000);
+                animateCounter('.stat-tutors', 50, 2000);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    observer.observe(statsSection);
+};
+
+const animateCounter = (selector, target, duration) => {
+    const element = document.querySelector(selector);
+    if (!element) return;
+
+    let current = 0;
+    const increment = target / (duration / 16);
+    const interval = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            element.textContent = target.toLocaleString() + (selector === '.stat-success' ? '%' : '+');
+            clearInterval(interval);
+        } else {
+            element.textContent = Math.floor(current).toLocaleString() + (selector === '.stat-success' ? '%' : '+');
+        }
+    }, 16);
+};
 </script>
 
 <template>
@@ -181,22 +255,22 @@ onMounted(() => {
                 </div>
 
                 <!-- Stats Row -->
-                <div class="row mt-5 pt-5 border-top border-light opacity-75">
-                    <div class="col-6 col-md-4">
+                <div class="stats-row row mt-5 pt-5 border-top border-light opacity-75">
+                    <div class="col-6 col-md-4 scroll-animate fade-up">
                         <div class="d-flex align-items-center gap-3">
-                            <h3 class="fw-bolder mb-0 display-6 text-primary">10k+</h3>
+                            <h3 class="stat-students fw-bolder mb-0 display-6 text-primary">0+</h3>
                             <p class="mb-0 text-muted small lh-sm fw-medium">Active<br>Students</p>
                         </div>
                     </div>
-                    <div class="col-6 col-md-4">
+                    <div class="col-6 col-md-4 scroll-animate fade-up">
                         <div class="d-flex align-items-center gap-3">
-                            <h3 class="fw-bolder mb-0 display-6 text-primary">98%</h3>
+                            <h3 class="stat-success fw-bolder mb-0 display-6 text-primary">0%</h3>
                             <p class="mb-0 text-muted small lh-sm fw-medium">Success<br>Rate</p>
                         </div>
                     </div>
-                    <div class="col-6 col-md-4 mt-4 mt-md-0">
+                    <div class="col-6 col-md-4 mt-4 mt-md-0 scroll-animate fade-up">
                         <div class="d-flex align-items-center gap-3">
-                            <h3 class="fw-bolder mb-0 display-6 text-primary">50+</h3>
+                            <h3 class="stat-tutors fw-bolder mb-0 display-6 text-primary">0+</h3>
                             <p class="mb-0 text-muted small lh-sm fw-medium">Expert<br>Tutors</p>
                         </div>
                     </div>
@@ -207,15 +281,16 @@ onMounted(() => {
         <!-- Features Section -->
         <section class="features-section py-5 position-relative bg-light" style="z-index: 2;">
             <div class="container py-4">
-                <div class="text-center mb-5">
+                <div class="text-center mb-5 scroll-animate fade-up">
                     <span class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill mb-2 fw-semibold">Outstanding
                         Features</span>
                     <h2 class="h2 fw-bold text-dark mb-0">Comprehensive Learning Ecosystem</h2>
                 </div>
                 <div class="row g-4 justify-content-center">
-                    <div class="col-md-4">
-                        <div class="feature-card bg-white p-4 rounded-4 shadow-sm h-100 transition-hover border-0">
-                            <div class="icon-box i-blue mb-4 rounded-3 d-flex align-items-center justify-content-center"
+                    <div class="col-md-4 scroll-animate fade-up">
+                        <div
+                            class="feature-card bg-white p-4 rounded-4 shadow-sm h-100 transition-hover border-0 glassmorphic">
+                            <div class="icon-box i-blue mb-4 rounded-3 d-flex align-items-center justify-content-center icon-animate"
                                 style="width: 56px; height: 56px; background: #e3f2fd; color: #2196f3; font-size: 1.5rem;">
                                 <i class="fa-solid fa-earth-americas"></i>
                             </div>
@@ -224,9 +299,10 @@ onMounted(() => {
                                 writing, listening, and speaking.</p>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="feature-card bg-white p-4 rounded-4 shadow-sm h-100 transition-hover border-0">
-                            <div class="icon-box i-pink mb-4 rounded-3 d-flex align-items-center justify-content-center"
+                    <div class="col-md-4 scroll-animate fade-up" style="animation-delay: 0.1s;">
+                        <div
+                            class="feature-card bg-white p-4 rounded-4 shadow-sm h-100 transition-hover border-0 glassmorphic">
+                            <div class="icon-box i-pink mb-4 rounded-3 d-flex align-items-center justify-content-center icon-animate"
                                 style="width: 56px; height: 56px; background: #fff0fa; color: #fc74dd; font-size: 1.5rem;">
                                 <i class="fa-solid fa-comments"></i>
                             </div>
@@ -235,9 +311,10 @@ onMounted(() => {
                                 speakers and expert tutors.</p>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="feature-card bg-white p-4 rounded-4 shadow-sm h-100 transition-hover border-0">
-                            <div class="icon-box i-green mb-4 rounded-3 d-flex align-items-center justify-content-center"
+                    <div class="col-md-4 scroll-animate fade-up" style="animation-delay: 0.2s;">
+                        <div
+                            class="feature-card bg-white p-4 rounded-4 shadow-sm h-100 transition-hover border-0 glassmorphic">
+                            <div class="icon-box i-green mb-4 rounded-3 d-flex align-items-center justify-content-center icon-animate"
                                 style="width: 56px; height: 56px; background: #e8f5e9; color: #4caf50; font-size: 1.5rem;">
                                 <i class="fa-solid fa-certificate"></i>
                             </div>
@@ -254,28 +331,31 @@ onMounted(() => {
         <section class="about-section py-5 my-md-5">
             <div class="container">
                 <div class="row align-items-center gx-lg-5">
-                    <div class="col-lg-6 mb-5 mb-lg-0">
+                    <div class="col-lg-6 mb-5 mb-lg-0 scroll-animate fade-left">
                         <span class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill mb-3 fw-semibold">About
                             Us</span>
                         <h2 class="display-6 fw-bold mb-4 lh-base text-dark">Why Choose Us?</h2>
                         <p class="lead text-muted mb-5">We combine technology with expert pedagogy to deliver the most
                             effective learning experience.</p>
                         <ul class="list-unstyled">
-                            <li class="mb-4 d-flex align-items-center gap-3">
+                            <li class="mb-4 d-flex align-items-center gap-3 scroll-animate fade-left"
+                                style="animation-delay: 0.2s;">
                                 <div class="icon-circle bg-soft-primary text-primary d-flex align-items-center justify-content-center rounded-circle"
                                     style="width: 40px; height: 40px;">
                                     <i class="fa-solid fa-check"></i>
                                 </div>
                                 <span class="fw-medium text-dark">Personalized Learning Path</span>
                             </li>
-                            <li class="mb-4 d-flex align-items-center gap-3">
+                            <li class="mb-4 d-flex align-items-center gap-3 scroll-animate fade-left"
+                                style="animation-delay: 0.35s;">
                                 <div class="icon-circle bg-soft-primary text-primary d-flex align-items-center justify-content-center rounded-circle"
                                     style="width: 40px; height: 40px;">
                                     <i class="fa-solid fa-book-open"></i>
                                 </div>
                                 <span class="fw-medium text-dark">24/7 Access to Materials</span>
                             </li>
-                            <li class="mb-0 d-flex align-items-center gap-3">
+                            <li class="mb-0 d-flex align-items-center gap-3 scroll-animate fade-left"
+                                style="animation-delay: 0.5s;">
                                 <div class="icon-circle bg-soft-primary text-primary d-flex align-items-center justify-content-center rounded-circle"
                                     style="width: 40px; height: 40px;">
                                     <i class="fa-solid fa-video"></i>
@@ -284,11 +364,12 @@ onMounted(() => {
                             </li>
                         </ul>
                     </div>
-                    <div class="col-lg-6 position-relative">
-                        <div class="position-absolute w-100 h-100 bg-soft-primary rounded-4"
+                    <div class="col-lg-6 position-relative scroll-animate fade-right">
+                        <div class="position-absolute w-100 h-100 bg-soft-primary rounded-4 floating-bg"
                             style="top: 20px; left: -20px; z-index: -1;"></div>
                         <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644" alt="Team"
-                            class="img-fluid rounded-4 shadow-sm object-fit-cover" style="height: 500px; width: 100%;">
+                            class="img-fluid rounded-4 shadow-sm object-fit-cover zoom-on-hover"
+                            style="height: 500px; width: 100%;">
                     </div>
                 </div>
             </div>
@@ -311,15 +392,17 @@ onMounted(() => {
                 <div v-if="loading" class="text-center py-5 text-muted">Loading courses...</div>
 
                 <div v-else class="row g-4">
-                    <div v-for="(course, index) in courses" :key="index" class="col-md-6 col-lg-4">
+                    <div v-for="(course, index) in visibleCourses" :key="index"
+                        class="col-md-6 col-lg-4 scroll-animate fade-up"
+                        :style="{ 'animation-delay': `${index * 0.1}s` }">
                         <div
-                            class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden course-card transition-hover">
-                            <div class="position-relative">
+                            class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden course-card transition-hover glassmorphic">
+                            <div class="position-relative overflow-hidden">
                                 <img :src="course.hinh_anh || 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=500'"
-                                    class="card-img-top object-fit-cover" alt="Course Image" style="height: 220px;"
-                                    @error="handleImageError">
+                                    class="card-img-top object-fit-cover zoom-on-hover" alt="Course Image"
+                                    style="height: 220px;" @error="handleImageError">
                                 <span
-                                    class="position-absolute top-0 end-0 m-3 badge bg-primary bg-gradient rounded-pill px-3 py-2 shadow-sm fw-medium">Hot</span>
+                                    class="position-absolute top-0 end-0 m-3 badge bg-primary bg-gradient rounded-pill px-3 py-2 shadow-sm fw-medium pulse-badge">Hot</span>
                             </div>
                             <div class="card-body p-4 d-flex flex-column">
                                 <h3 class="card-title h5 fw-bold text-dark mb-3">{{ course.title }}</h3>
@@ -368,8 +451,10 @@ onMounted(() => {
                 </div>
 
                 <div v-else class="row g-4">
-                    <div v-for="test in publishedTests" :key="test.id" class="col-md-6 col-lg-4">
-                        <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden test-card bg-white">
+                    <div v-for="test in visibleTests" :key="test.id" class="col-md-6 col-lg-4 scroll-animate fade-up"
+                        :style="{ 'animation-delay': `${visibleTests.indexOf(test) * 0.1}s` }">
+                        <div
+                            class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden test-card bg-white glassmorphic">
                             <div class="card-body p-4 d-flex flex-column">
                                 <div class="d-flex align-items-center gap-2 mb-4">
                                     <span
@@ -393,7 +478,7 @@ onMounted(() => {
                                             <i class="fas fa-user text-secondary small"></i>
                                         </div>
                                         <span class="text-dark fw-medium small">{{ test.giao_vien?.name || 'Tutor'
-                                            }}</span>
+                                        }}</span>
                                     </div>
                                     <button class="btn btn-primary btn-sm rounded-pill px-4 py-2 fw-semibold shadow-sm"
                                         @click="goToTest(test.id)">
@@ -408,9 +493,9 @@ onMounted(() => {
         </section>
 
         <!-- Registration Section -->
-        <section id="register-section" class="register-section py-5 bg-white">
+        <section id="register-section" class="register-section py-5 bg-white scroll-animate fade-up">
             <div class="container py-lg-4">
-                <div class="card border-0 shadow-lg rounded-5 overflow-hidden">
+                <div class="card border-0 shadow-lg rounded-5 overflow-hidden glassmorphic-card">
                     <div class="row g-0">
                         <div class="col-lg-6 p-5 p-xl-5 d-flex flex-column justify-content-center bg-white">
                             <span
@@ -468,59 +553,97 @@ onMounted(() => {
 
 .home-page {
     font-family: 'Outfit', sans-serif;
+    overflow-x: hidden;
 }
 
-/* Hero Section */
-.hero-section {
-    background: linear-gradient(135deg, #fff 0%, #f9f0f6 100%);
+/* ===== SCROLL ANIMATIONS ===== */
+.scroll-animate {
+    opacity: 0;
 }
 
-.text-gradient {
-    background: linear-gradient(to right, #fc74dd, #ff9eeb);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+.scroll-animate.animate-in {
+    animation: fadeInScroll 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-.bg-soft-primary {
-    background-color: rgba(252, 116, 221, 0.1) !important;
+.scroll-animate.fade-up {
+    animation: slideUpFadeSmooth 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-.shadow-xxl {
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+.scroll-animate.fade-left {
+    animation: slideLeftFadeSmooth 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-.hover-lift {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+.scroll-animate.fade-right {
+    animation: slideRightFadeSmooth 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-.hover-lift:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15) !important;
+@keyframes fadeInScroll {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
-.hover-scale {
-    transition: transform 0.3s ease;
+@keyframes slideUpFadeSmooth {
+    0% {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.hover-scale:hover {
-    transform: scale(1.02);
+@keyframes slideLeftFadeSmooth {
+    0% {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
-/* Floating Cards Animation */
-.floating-card {
-    animation: float 6s ease-in-out infinite;
+@keyframes slideRightFadeSmooth {
+    0% {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
-.c1 {
-    animation-delay: 0s;
+/* ===== GLASSMORPHISM ===== */
+.glassmorphic,
+.glassmorphic-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
-.c2 {
-    animation-delay: 3s;
+.glassmorphic:hover,
+.glassmorphic-card:hover {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(15px);
 }
 
-@keyframes float {
+/* ===== ICON ANIMATIONS ===== */
+.icon-animate {
+    transition: all 0.3s ease;
+    animation: iconBounce 2s ease-in-out infinite;
+}
+
+@keyframes iconBounce {
 
     0%,
     100% {
@@ -528,18 +651,182 @@ onMounted(() => {
     }
 
     50% {
-        transform: translateY(-15px);
+        transform: translateY(-8px);
+    }
+}
+
+.feature-card:hover .icon-animate {
+    animation: iconPulse 0.6s ease-in-out;
+}
+
+@keyframes iconPulse {
+    0% {
+        transform: scale(1) translateY(0);
+    }
+
+    50% {
+        transform: scale(1.15) translateY(-5px);
+    }
+
+    100% {
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* ===== PULSE EFFECT ===== */
+.pulse-badge {
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(252, 116, 221, 0.7);
+    }
+
+    50% {
+        box-shadow: 0 0 0 10px rgba(252, 116, 221, 0);
+    }
+}
+
+/* ===== ZOOM ON HOVER ===== */
+.zoom-on-hover {
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.zoom-on-hover:hover {
+    transform: scale(1.05);
+}
+
+/* ===== FLOATING BACKGROUND ===== */
+.floating-bg {
+    animation: floatBackgroundSmooth 10s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+}
+
+@keyframes floatBackgroundSmooth {
+
+    0%,
+    100% {
+        transform: translateY(0px) translateX(0px);
+    }
+
+    50% {
+        transform: translateY(-15px) translateX(5px);
+    }
+}
+
+/* ===== GRADIENT ANIMATIONS ===== */
+.hero-section {
+    background: linear-gradient(135deg, #fff 0%, #f9f0f6 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(252, 116, 221, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: gridMove 20s linear infinite;
+    z-index: 0;
+}
+
+@keyframes gridMove {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    100% {
+        transform: translate(50px, 50px);
+    }
+}
+
+/* ===== UPDATED STYLES ===== */
+
+.text-gradient {
+    background: linear-gradient(to right, #fc74dd, #ff9eeb);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+}
+
+.bg-soft-primary {
+    background-color: rgba(252, 116, 221, 0.1) !important;
+}
+
+.bg-soft-success {
+    background-color: rgba(76, 175, 80, 0.1) !important;
+}
+
+.shadow-xxl {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.hover-lift {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+    position: relative;
+}
+
+.hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2) !important;
+}
+
+.hover-scale {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+/* Floating Cards Animation */
+.floating-card {
+    animation: floatSmooth 8s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+}
+
+.c1 {
+    animation-delay: 0.8s;
+}
+
+.c2 {
+    animation-delay: 1.5s;
+}
+
+@keyframes floatSmooth {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    25% {
+        transform: translateY(-12px) rotate(1deg);
+    }
+
+    50% {
+        transform: translateY(-20px) rotate(0deg);
+    }
+
+    75% {
+        transform: translateY(-12px) rotate(-1deg);
     }
 }
 
 /* Feature Cards */
 .transition-hover {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
 }
 
 .transition-hover:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 1rem 3rem rgba(0, 0, 0, .1) !important;
+    transform: translateY(-12px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15) !important;
 }
 
 /* Line Clamp */
@@ -560,22 +847,31 @@ onMounted(() => {
 
 /* Test Cards */
 .test-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
     border-top: 3px solid transparent;
+    position: relative;
+}
+
+.test-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, #fc74dd, #ff9eeb, #fc74dd);
+    opacity: 0;
+    transition: opacity 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.test-card:hover::before {
+    opacity: 1;
 }
 
 .test-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 1rem 3rem rgba(0, 0, 0, .1) !important;
+    transform: translateY(-12px);
+    box-shadow: 0 25px 50px rgba(252, 116, 221, 0.25) !important;
     border-top-color: #fc74dd;
-}
-
-.bg-soft-success {
-    background-color: rgba(76, 175, 80, 0.1) !important;
-}
-
-.bg-soft-primary {
-    background-color: rgba(252, 116, 221, 0.1) !important;
 }
 
 .overlay-gradient {
@@ -584,5 +880,168 @@ onMounted(() => {
 
 .border-dashed {
     border-style: dashed !important;
+}
+
+/* Course Cards Enhancement */
+.course-card {
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.course-card:hover {
+    transform: translateY(-12px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Star Glow Animation */
+.highlight {
+    animation: highlightGlow 2s ease-in-out infinite;
+}
+
+@keyframes highlightGlow {
+
+    0%,
+    100% {
+        text-shadow: 0 0 10px rgba(252, 116, 221, 0.3);
+    }
+
+    50% {
+        text-shadow: 0 0 20px rgba(252, 116, 221, 0.6);
+    }
+}
+
+/* Button Enhancement */
+.btn {
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s cubic-bezier(0.23, 1, 0.320, 1), height 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* Section Parallax Effects */
+.features-section {
+    position: relative;
+}
+
+.features-section::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100px;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.5));
+    pointer-events: none;
+}
+
+/* Text Animations */
+.hero-title {
+    animation: titleSlideIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s backwards;
+}
+
+.hero-subtitle {
+    animation: subtitleFadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.4s backwards;
+}
+
+.hero-actions {
+    animation: actionsSlideUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.6s backwards;
+}
+
+.badge {
+    animation: badgeSlideDown 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s backwards;
+}
+
+@keyframes titleSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes subtitleFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes actionsSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(25px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes badgeSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Smooth Transitions for All */
+* {
+    scroll-behavior: smooth;
+}
+
+/* Input Fields Animation */
+.form-control,
+.form-select {
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+    border: 2px solid transparent !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #fc74dd !important;
+    box-shadow: 0 0 0 0.3rem rgba(252, 116, 221, 0.2) !important;
+    transform: translateY(-3px);
+}
+
+/* Responsive Design Enhancements */
+@media (max-width: 768px) {
+    .hero-section::before {
+        display: none;
+    }
+
+    .scroll-animate {
+        animation-delay: 0s !important;
+    }
 }
 </style>
